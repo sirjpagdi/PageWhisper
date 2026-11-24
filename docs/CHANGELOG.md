@@ -15,7 +15,7 @@
 - README: build and setup instructions removed.
 - The APK is no longer included in the source package, and files sit at the root of the zip.
 - Reading style: underline now uses the selected highlight color in both preview and reader, and the highlighted text is bolded.
-- Fullscreen brightness now opens Android Display settings and follows system brightness instead of overriding the app window.
+- Fullscreen brightness now synchronizes the in-app slider with system brightness controls. Android's required system-settings access is explained, and the slider switches adaptive brightness to manual mode when adjusted.
 - Chapter fetching removes injected arrow-key navigation and comment-rules text from HTML, reader-service, and in-app browser extraction.
 - versionCode 4, versionName 0.4.0.
 

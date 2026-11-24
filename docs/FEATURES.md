@@ -33,7 +33,7 @@ Android column: **Written, not yet built** means the source is in the repository
 | **Sleep timer** (timed or end of chapter, with fade-out) | **Done** | Written, not yet built |
 | **Novel covers** (Library list only) | **Done** | Written, not yet built |
 | **Chapter lists** (full table of contents per novel) | **Done** | Written, not yet built |
-| **Brightness in fullscreen** | **Done** (software dimming) | Opens Android Display settings; follows system brightness |
+| **Brightness in fullscreen** | **Done** (software dimming) | System brightness slider stays in sync with Android controls |
 | **Keep screen on while locked** | **Done** | Written, not yet built |
 | **Flat SVG icons, no emoji** | **Done** | Written, not yet built (vector drawables) |
 | **Pronunciation fixes** (all novels or one novel) | **Done** | Written, not yet built |
@@ -270,7 +270,8 @@ A sun button appears in the fullscreen toolbar (before the lock button) and open
   `min(0.9, 1 - brightness)`, so the lowest setting never goes fully black. It only exists in fullscreen, lets touches through,
   and stays on top of the touch lock. While the panel is open the preview is capped at 0.55 so the panel stays readable.
 - It cannot make the screen brighter than the phone's own setting.
-- **Android:** the sun button opens the system Display settings. PageWhisper follows the system brightness and does not override it.
+- **Android:** the in-app slider changes system brightness, and changes made in Android's brightness controls are reflected in the app.
+  Android's "Modify system settings" access is required. Adjusting the slider switches adaptive brightness to manual mode.
 
 ---
 
@@ -297,7 +298,7 @@ The screen is kept on when **either** applies:
 - If the browser drops the wake lock, the app gets it again within about a second.
 - If the browser refuses it, the fallback runs and the status says so.
 - A browser that keeps dropping it does not cause a request loop.
-- In fullscreen, the brightness button is visible; web dims the app, while Android opens system Display settings.
+- In fullscreen, the brightness button is visible; web dims the app, while Android adjusts system brightness.
 - Outside fullscreen there is no app-level dimming.
 - Dimming also applies while locked, and survives a reload.
 

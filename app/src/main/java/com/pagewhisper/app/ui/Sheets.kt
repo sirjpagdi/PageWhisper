@@ -1,8 +1,11 @@
 package com.pagewhisper.app.ui
 
 import android.content.Intent
+import android.database.ContentObserver
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +67,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pagewhisper.app.data.Repo
 import com.pagewhisper.app.model.PronRule
@@ -74,6 +81,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.ceil
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 fun fmtClock(ms: Long): String {
     val s = max(0L, ceil(ms / 1000.0).toLong())
@@ -222,21 +230,130 @@ private fun SleepSheet(vm: AppViewModel) {
 @Composable
 private fun BrightSheet(vm: AppViewModel) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val canWrite = remember(context) { mutableStateOf(Settings.System.canWrite(context)) }
+    val brightness = remember(context) { mutableStateOf(readSystemBrightness(context)) }
+    val adaptive = remember(context) { mutableStateOf(isAdaptiveBrightness(context)) }
+
+    DisposableEffect(context, lifecycleOwner) {
+        val resolver = context.contentResolver
+        fun refresh() {
+            canWrite.value = Settings.System.canWrite(context)
+            brightness.value = readSystemBrightness(context)
+            adaptive.value = isAdaptiveBrightness(context)
+        }
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) = refresh()
+        }
+        resolver.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS),
+            false,
+            observer,
+        )
+        resolver.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE),
+            false,
+            observer,
+        )
+        val lifecycleObserver = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refresh()
+        }
+        lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
+        refresh()
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
+            resolver.unregisterContentObserver(observer)
+        }
+    }
+
+    fun setSystemBrightness(percent: Int) {
+        if (!Settings.System.canWrite(context)) {
+            canWrite.value = false
+            vm.toast("Allow PageWhisper to modify system settings to change brightness.")
+            return
+        }
+        try {
+            val resolver = context.contentResolver
+            val mode = Settings.System.getInt(
+                resolver,
+                Settings.System.SCREEN_BRIGHTNESS_MODE,
+                Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL,
+            )
+            val value = (percent.coerceIn(1, 100) * 255f / 100f).roundToInt().coerceIn(1, 255)
+            if (!Settings.System.putInt(resolver, Settings.System.SCREEN_BRIGHTNESS, value)) {
+                vm.toast("Android could not update system brightness.")
+                return
+            }
+            if (mode != Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL &&
+                !Settings.System.putInt(
+                    resolver,
+                    Settings.System.SCREEN_BRIGHTNESS_MODE,
+                    Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL,
+                )
+            ) {
+                vm.toast("Android could not switch to manual brightness.")
+                return
+            }
+            brightness.value = (value * 100f / 255f).roundToInt().coerceIn(1, 100)
+            adaptive.value = false
+        } catch (_: SecurityException) {
+            canWrite.value = Settings.System.canWrite(context)
+            vm.toast("Allow PageWhisper to modify system settings to change brightness.")
+        }
+    }
+
     Column(Modifier.padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SheetHeader("Brightness", onDone = { vm.closeSheet() })
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            PrimaryButton("Open display settings", {
-                vm.closeSheet()
-                try {
-                    context.startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS))
-                } catch (_: android.content.ActivityNotFoundException) {
-                    vm.toast("Display settings aren't available on this device.")
+            if (canWrite.value) {
+                SliderRow("System brightness", brightness.value.toFloat(), 1f..100f, 98, "${brightness.value}%") {
+                    setSystemBrightness(it.toInt())
                 }
-            }, Modifier.fillMaxWidth())
-            Hint("Adjust your phone's system brightness there. PageWhisper follows the system setting and does not override it.")
+                Segmented(
+                    listOf("25" to "25%", "50" to "50%", "75" to "75%", "100" to "100%"),
+                    brightness.value.toString().takeIf { it in listOf("25", "50", "75", "100") } ?: "",
+                ) { setSystemBrightness(it.toInt()) }
+                Hint(
+                    if (adaptive.value) {
+                        "Moving this slider turns off adaptive brightness and sets a manual system level. It stays in sync with your phone's brightness controls."
+                    } else {
+                        "This changes system brightness. The phone's brightness controls and this slider stay in sync."
+                    },
+                )
+            } else {
+                PrimaryButton("Allow system brightness control", {
+                    try {
+                        context.startActivity(
+                            Intent(
+                                Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                                Uri.parse("package:${context.packageName}"),
+                            ),
+                        )
+                    } catch (_: android.content.ActivityNotFoundException) {
+                        vm.toast("System brightness access isn't available on this device.")
+                    }
+                }, Modifier.fillMaxWidth())
+                Hint("Android requires this one-time access so PageWhisper and your phone's brightness controls can stay in sync.")
+            }
         }
     }
 }
+
+private fun readSystemBrightness(context: android.content.Context): Int {
+    val value = Settings.System.getInt(
+        context.contentResolver,
+        Settings.System.SCREEN_BRIGHTNESS,
+        128,
+    )
+    return (value * 100f / 255f).roundToInt().coerceIn(1, 100)
+}
+
+private fun isAdaptiveBrightness(context: android.content.Context): Boolean =
+    Settings.System.getInt(
+        context.contentResolver,
+        Settings.System.SCREEN_BRIGHTNESS_MODE,
+        Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL,
+    ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
 
 // ======================= pronunciation =======================
 @Composable

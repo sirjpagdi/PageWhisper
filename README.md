@@ -4,7 +4,7 @@ A native Android reader that speaks web novel chapters with Kokoro voices that r
 the app's own screens, no account, no server. It is the native version of the web app ("PageWhisper Lab", `index.html`): every feature there is
 here, and `FEATURES.md` is the spec for both.
 
-> **0.4.0:** system-controlled fullscreen brightness, cleaner chapter extraction, and reading-style fixes, alongside bundled fonts,
+> **0.4.0:** synchronized in-app and system brightness controls, cleaner chapter extraction, and reading-style fixes, alongside bundled fonts,
 > stronger text contrast, chapter title narration, and a cooler-running voice engine.
 > See [the changelog](docs/CHANGELOG.md) for details.
 
@@ -68,7 +68,7 @@ Better on Android:
 | Speech speed | one thread in the browser | several CPU threads |
 | Fetching | blocked by browser rules; needs proxies | direct; no proxies |
 | Sites with bot protection | not possible | **Read in browser**: pass the check yourself, then read the page |
-| Brightness | dims below the system level | opens system display settings |
+| Brightness | dims below the system level | in-app and system brightness controls stay in sync |
 | Keep screen on | wake lock with a fallback | `FLAG_KEEP_SCREEN_ON` |
 | Back button while locked | cannot be blocked | blocked |
 | Voice model | cached by the browser | stored once on the phone |
