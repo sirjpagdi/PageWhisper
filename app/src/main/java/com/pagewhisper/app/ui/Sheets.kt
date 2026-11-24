@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -120,16 +121,22 @@ private fun ReadingSheet(vm: AppViewModel) {
     Column(Modifier.fillMaxHeight(0.9f).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         SheetHeader("Reading style", onDone = { vm.closeSheet() }, extra = { SoftButton("Reset", { upd { ReadingStyle() } }) })
         val hl = highlightColor(r.hl)
+        val previewHighlight = "Lanterns swayed above the narrow streets, and the smell of salt drifted up from the docks."
+        val previewText = "The rain had been falling over the old harbor town for three days. $previewHighlight Mira pulled her coat tighter and stepped into the lamplight."
+        var previewLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
         Text(
             buildAnnotatedString {
                 append("The rain had been falling over the old harbor town for three days. ")
                 withStyle(sentenceHighlightStyle(r.hlStyle, hl, if (r.weight == 700) FontWeight.Bold else FontWeight.Normal)) {
-                    append("Lanterns swayed above the narrow streets, and the smell of salt drifted up from the docks. ")
+                    append(previewHighlight)
                 }
-                append("Mira pulled her coat tighter and stepped into the lamplight.")
+                append(" Mira pulled her coat tighter and stepped into the lamplight.")
             },
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(12.dp)).background(c.bg).border(1.dp, c.line, RoundedCornerShape(12.dp)).padding(horizontal = (r.pad + 10).dp, vertical = 8.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(12.dp)).background(c.bg).border(1.dp, c.line, RoundedCornerShape(12.dp))
+                .padding(horizontal = (r.pad + 10).dp, vertical = 8.dp)
+                .then(if (r.hlStyle == "outline") Modifier.outlineTextRange(previewLayout, previewText.indexOf(previewHighlight), previewText.indexOf(previewHighlight) + previewHighlight.length, hl) else Modifier),
             style = readingTextStyle(ctx, r, c.text), maxLines = 6, overflow = TextOverflow.Ellipsis,
+            onTextLayout = { previewLayout = it },
         )
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),

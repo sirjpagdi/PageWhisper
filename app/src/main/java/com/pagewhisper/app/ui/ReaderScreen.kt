@@ -36,6 +36,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
@@ -79,6 +80,38 @@ fun sentenceHighlightStyle(style: String, color: Color, fontWeight: FontWeight?)
         else -> SpanStyle(background = color.copy(alpha = 0.34f))
     }
     return highlight.copy(fontWeight = fontWeight)
+}
+
+fun Modifier.outlineTextRange(layout: TextLayoutResult?, start: Int, end: Int, color: Color): Modifier = drawBehind {
+    val textLayout = layout ?: return@drawBehind
+    if (start < 0 || end > textLayout.layoutInput.text.length || start >= end) return@drawBehind
+    drawTextRangeOutline(textLayout, start, end, color)
+}
+
+private fun DrawScope.drawTextRangeOutline(layout: TextLayoutResult, start: Int, end: Int, color: Color) {
+    val lineRects = HashMap<Int, Rect>()
+    for (offset in start until end) {
+        val box = layout.getBoundingBox(offset)
+        val line = layout.getLineForOffset(offset)
+        val rect = Rect(box.left, box.top, box.right, box.bottom)
+        val existing = lineRects[line]
+        lineRects[line] = if (existing == null) rect else Rect(
+            minOf(existing.left, rect.left),
+            minOf(existing.top, rect.top),
+            maxOf(existing.right, rect.right),
+            maxOf(existing.bottom, rect.bottom),
+        )
+    }
+    val radius = 3.dp.toPx()
+    for (rect in lineRects.values) {
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(rect.left, rect.top),
+            size = Size(rect.width, rect.height),
+            cornerRadius = CornerRadius(radius, radius),
+            style = Stroke(width = 2.dp.toPx()),
+        )
+    }
 }
 
 @Composable
@@ -155,39 +188,14 @@ private fun Paragraph(group: List<Section>, active: Int, style: TextStyle, hl: C
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     Text(
         annotated, style = style, onTextLayout = { layout = it },
-        modifier = Modifier.fillMaxWidth().padding(bottom = spacing).drawBehind {
-            if (hlStyle == "outline" && active >= 0) {
+        modifier = Modifier.fillMaxWidth().padding(bottom = spacing)
+            .then(if (hlStyle == "outline" && active >= 0) {
                 val sectionIndex = group.indexOfFirst { it.index == active }
-                val start = starts.getOrNull(sectionIndex)
+                val start = starts.getOrNull(sectionIndex) ?: -1
                 val section = group.getOrNull(sectionIndex)
-                val textLayout = layout
-                if (start != null && section != null && textLayout != null) {
-                    val lineRects = HashMap<Int, Rect>()
-                    for (offset in start until start + section.text.length) {
-                        val box = textLayout.getBoundingBox(offset)
-                        val line = textLayout.getLineForOffset(offset)
-                        val rect = Rect(box.left, box.top, box.right, box.bottom)
-                        val existing = lineRects[line]
-                        lineRects[line] = if (existing == null) rect else Rect(
-                            minOf(existing.left, rect.left),
-                            minOf(existing.top, rect.top),
-                            maxOf(existing.right, rect.right),
-                            maxOf(existing.bottom, rect.bottom),
-                        )
-                    }
-                    val radius = 3.dp.toPx()
-                    for (rect in lineRects.values) {
-                        drawRoundRect(
-                            color = hl,
-                            topLeft = Offset(rect.left, rect.top),
-                            size = Size(rect.width, rect.height),
-                            cornerRadius = CornerRadius(radius, radius),
-                            style = Stroke(width = 2.dp.toPx()),
-                        )
-                    }
-                }
-            }
-        }.pointerInput(group) {
+                Modifier.outlineTextRange(layout, start, start + (section?.text?.length ?: 0), hl)
+            } else Modifier)
+            .pointerInput(group) {
             detectTapGestures { pos -> // tap a sentence to start from there
                 val off = layout?.getOffsetForPosition(pos) ?: return@detectTapGestures
                 val i = starts.indexOfLast { it <= off }
