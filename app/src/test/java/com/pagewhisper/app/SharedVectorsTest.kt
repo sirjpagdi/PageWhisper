@@ -1,6 +1,7 @@
 package com.pagewhisper.app
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import com.pagewhisper.app.data.BackupCore
 import com.pagewhisper.app.data.CleanBackup
 import com.pagewhisper.app.data.CleanNovel
@@ -30,6 +31,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -73,6 +75,35 @@ class SharedVectorsTest {
     @Test fun accentContentColorTracksAccentLightness() {
         assertEquals(Color.Black, accentContentColor(pwColors("dark", "purple", 35).accent))
         assertEquals(Color.White, accentContentColor(pwColors("dark", "purple", -35).accent))
+    }
+
+    @Test fun lightAndSepiaTextHaveReadableContrast() {
+        for (theme in listOf("light", "sepia")) {
+            val colors = pwColors(theme)
+            for (foreground in listOf(colors.text, colors.muted)) {
+                for (background in listOf(colors.bg, colors.panel)) {
+                    val fore = foreground.luminance()
+                    val back = background.luminance()
+                    val contrast = (maxOf(fore, back) + 0.05f) / (minOf(fore, back) + 0.05f)
+                    assertTrue("$theme text contrast is $contrast", contrast >= 4.5f)
+                }
+            }
+        }
+    }
+
+    @Test fun chapterTitleIsSpokenBeforeBodyWithoutShowingAsBodyText() {
+        val sections = TextTools.buildSections("Opening paragraph.", 280, null, "", "Chapter 7: The Return")
+        assertEquals("Chapter 7: The Return", sections.first().text)
+        assertEquals(-1, sections.first().para)
+        assertEquals(0, sections[1].para)
+        assertEquals("Opening paragraph.", sections[1].text)
+    }
+
+    @Test fun chapterTitleAlreadyAtBodyStartIsNotSpokenTwice() {
+        val title = "Chapter 7: The Return"
+        val sections = TextTools.buildSections("$title\nOpening paragraph.", 280, null, "", title)
+        assertEquals(0, sections.first().para)
+        assertEquals(title, sections.first().text)
     }
 
     @Test fun sanitizePron() {

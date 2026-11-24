@@ -108,11 +108,12 @@ fun ReaderScreen(vm: AppViewModel, listState: LazyListState) {
                 Box(Modifier.padding(top = 16.dp)) { PrimaryButton("Open a chapter", { vm.tab.value = Tab.OPEN }) }
             }
         } else {
-            val paras = remember(sections) { sections.groupBy { it.para }.toSortedMap().values.toList() }
+            val paras = remember(sections) { sections.filter { it.para >= 0 }.groupBy { it.para }.toSortedMap().values.toList() }
             val style = remember(reading, c) { readingTextStyle(ctx, reading, c.text) }
             val hl = highlightColor(reading.hl)
+            LaunchedEffect(ch) { listState.scrollToItem(0) }
             LaunchedEffect(ui.index, ui.playing) { // follow the narration
-                if (ui.playing) sections.getOrNull(ui.index)?.let { listState.animateScrollToItem(it.para, -150) }
+                if (ui.playing) sections.getOrNull(ui.index)?.let { listState.animateScrollToItem(it.para.coerceAtLeast(0), -150) }
             }
             LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(start = reading.pad.dp, end = reading.pad.dp, top = 8.dp, bottom = 48.dp)) {
                 itemsIndexed(paras) { _, group ->

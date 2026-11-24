@@ -4,11 +4,10 @@ A native Android reader that speaks web novel chapters with Kokoro voices that r
 the app's own screens, no account, no server. It is the native version of the web app ("PageWhisper Lab", `index.html`): every feature there is
 here, and `FEATURES.md` is the spec for both.
 
-> **0.2.0:** synced with PageWhisper Lab 0.13.3: accent colour and shade in the reading style, duration-based speech buffering
-> (cooler, less battery), and a new launcher icon. Still not built or run; see below.
+> **0.3.0:** bundled offline reading fonts, Montserrat UI typography, stronger light-theme contrast, accent-aware button text,
+> chapter-title narration, and reader scroll reset. See [the changelog](docs/CHANGELOG.md) for details.
 >
-> **Status: written in full, not yet built or run.** I could not compile Android code where this was written, so expect a few small fixes on your
-> first build (see "First build" below). What *was* checked is listed under "What was verified".
+> **Status:** v0.2.0 has been built and installed. The v0.3.0 changes have not yet been built.
 
 ## Set up (about 20 minutes)
 

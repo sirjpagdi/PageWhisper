@@ -73,14 +73,16 @@ Out-of-range or unknown values are clamped or replaced by the default when loadi
 - **Android:** bundle these as font resources (all are open-licensed: OFL, plus OpenDyslexic's own open license; check each
   license text before a Play release).
 
-### Themes (colors are shared by both versions)
+### Themes (background and panel colors are shared; Android text colors are darker for readability)
 
-| Theme | Background | Text | Panel | Accent |
+| Theme | Background | Text (web / Android) | Panel | Accent |
 |---|---|---|---|---|
 | Dark | `#0e0e16` | `#ecebf5` | `#171722` | `#8b5cf6` |
 | AMOLED | `#000000` | `#e8e8f0` | `#0b0b10` | `#8b5cf6` |
-| Sepia | `#f4ecd8` | `#4a3b27` | `#ebe0c6` | `#9a5b2e` |
-| Light | `#fafafa` | `#1d1d27` | `#ffffff` | `#6d3fe0` |
+| Sepia | `#f4ecd8` | `#4a3b27` / `#2e2115` | `#ebe0c6` | `#9a5b2e` |
+| Light | `#fafafa` | `#1d1d27` / `#111116` | `#ffffff` | `#6d3fe0` |
+
+Android muted text is `#51412b` in Sepia and `#3f414a` in Light.
 
 ### Accent colour and shade (reading style keys `accent`, `accentTone`)
 
@@ -103,6 +105,7 @@ The app UI uses medium-weight Montserrat; the reader font remains independently 
 
 Speech is generated only when the audio in front of the speaker is running low: after the first section, a new one is made
 when less than 15 s remain (35 s while the screen is off or the app is hidden). This keeps the device cooler and saves battery.
+On Android, the chapter title is spoken before the body when it is not already the first body paragraph. The title intro is not duplicated in the reader text.
 
 ### Highlight colors (RGB)
 

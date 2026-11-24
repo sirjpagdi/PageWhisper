@@ -122,7 +122,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun novelKeyOf(url: String) = if (url.isEmpty()) "" else Extractor.novelKey(url)
 
     private fun rebuild(ch: ChapterState) {
-        val secs = TextTools.buildSections(ch.text, Repo.settings.value.chunk, pronEngine, novelKeyOf(ch.url))
+        val secs = TextTools.buildSections(ch.text, Repo.settings.value.chunk, pronEngine, novelKeyOf(ch.url), ch.title)
         sections.value = secs
         Playback.setChapter(ch.title, Repo.novelFor(ch.url)?.title ?: "", secs)
     }
@@ -130,7 +130,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** A pronunciation change takes effect on sections that are not prepared yet. */
     private fun refreshSpeech() {
         val ch = chapter.value ?: return
-        val secs = TextTools.buildSections(ch.text, Repo.settings.value.chunk, pronEngine, novelKeyOf(ch.url))
+        val secs = TextTools.buildSections(ch.text, Repo.settings.value.chunk, pronEngine, novelKeyOf(ch.url), ch.title)
         sections.value = secs
         Playback.updateSections(secs)
     }

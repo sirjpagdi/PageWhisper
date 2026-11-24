@@ -2,7 +2,7 @@ package com.pagewhisper.app.text
 
 import com.pagewhisper.app.model.Section
 
-/** Pure text helpers. They mirror the web app exactly; shared-tests.json checks both. */
+/** Pure text helpers; shared-tests.json keeps the shared text behavior in sync with the web app. */
 object TextTools {
     private val NEWLINES3 = Regex("\\n{3,}")
     private val SPACE_BEFORE_NL = Regex("[ \\t]+\\n")
@@ -44,11 +44,20 @@ object TextTools {
         return out
     }
 
-    /** Splits a chapter into paragraphs, then into spoken sections (pronunciation rules applied to the speech only). */
-    fun buildSections(text: String, max: Int, pron: PronEngine?, novelKey: String): List<Section> {
+    /** Splits a chapter into spoken sections, keeping an optional title separate from visible body paragraphs. */
+    fun buildSections(text: String, max: Int, pron: PronEngine?, novelKey: String, chapterTitle: String? = null): List<Section> {
         val out = ArrayList<Section>()
         val paras = text.split(Regex("\\n+")).map { it.trim() }.filter { it.isNotEmpty() }
+        val title = chapterTitle?.replace(WS, " ")?.trim()
+            ?.takeIf { it.isNotEmpty() && it.lowercase() !in setOf("untitled chapter", "imported text", "pasted chapter", "shared chapter") }
+            ?.takeUnless { heading -> paras.firstOrNull()?.replace(WS, " ")?.equals(heading, ignoreCase = true) == true }
         var idx = 0
+        title?.let { heading ->
+            for (piece in splitForSpeech(heading, max)) {
+                val spoken = speechText(pron?.apply(piece, novelKey) ?: piece)
+                if (spoken.isNotEmpty()) out.add(Section(idx++, -1, piece, spoken))
+            }
+        }
         paras.forEachIndexed { pi, p ->
             for (piece in splitForSpeech(p, max)) {
                 val spoken = speechText(pron?.apply(piece, novelKey) ?: piece)

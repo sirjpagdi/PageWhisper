@@ -34,11 +34,11 @@ private val darkBase = PwColors(
 fun pwColors(theme: String): PwColors = when (theme) {
     "amoled" -> darkBase.copy(bg = Color.Black, panel = Color(0xFF0B0B10), panel2 = Color(0xFF16161F), line = Color(0xFF25253A), text = Color(0xFFE8E8F0), muted = Color(0xFF9A99B0), input = Color.Black)
     "sepia" -> PwColors(
-        bg = Color(0xFFF4ECD8), panel = Color(0xFFEBE0C6), panel2 = Color(0xFFE2D5B5), line = Color(0xFFCDBD96), text = Color(0xFF4A3B27), muted = Color(0xFF7A6A4F),
+        bg = Color(0xFFF4ECD8), panel = Color(0xFFEBE0C6), panel2 = Color(0xFFE2D5B5), line = Color(0xFFCDBD96), text = Color(0xFF2E2115), muted = Color(0xFF51412B),
         accent = Color(0xFF9A5B2E), accent2 = Color(0xFF7A4A1B), input = Color(0xFFF8F1DF), red = Color(0xFFA14A3A), green = Color(0xFF4F7A4A), light = true,
     )
     "light" -> PwColors(
-        bg = Color(0xFFFAFAFA), panel = Color(0xFFFFFFFF), panel2 = Color(0xFFEEF0F4), line = Color(0xFFD8DBE3), text = Color(0xFF1D1D27), muted = Color(0xFF626578),
+        bg = Color(0xFFFAFAFA), panel = Color(0xFFFFFFFF), panel2 = Color(0xFFEEF0F4), line = Color(0xFFD8DBE3), text = Color(0xFF111116), muted = Color(0xFF3F414A),
         accent = Color(0xFF6D3FE0), accent2 = Color(0xFF5A2FC4), input = Color(0xFFF5F6F9), red = Color(0xFFB3392F), green = Color(0xFF2F7D4F), light = true,
     )
     else -> darkBase
