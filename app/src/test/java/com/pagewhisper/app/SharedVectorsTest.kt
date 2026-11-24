@@ -18,6 +18,7 @@ import com.pagewhisper.app.text.PronEngine
 import com.pagewhisper.app.text.TextTools
 import com.pagewhisper.app.ui.accentContentColor
 import com.pagewhisper.app.ui.pwColors
+import com.pagewhisper.app.ui.sentenceHighlightStyle
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -104,6 +105,20 @@ class SharedVectorsTest {
         val sections = TextTools.buildSections("$title\nOpening paragraph.", 280, null, "", title)
         assertEquals(0, sections.first().para)
         assertEquals(title, sections.first().text)
+    }
+
+    @Test fun readingHighlightStyleReflectsEachChoiceAndTextWeight() {
+        val color = Color(0xFF8B5CF6)
+        val bold = sentenceHighlightStyle("underline", color, androidx.compose.ui.text.font.FontWeight.Bold)
+        assertEquals(androidx.compose.ui.text.style.TextDecoration.Underline, bold.textDecoration)
+        assertEquals(androidx.compose.ui.text.font.FontWeight.Bold, bold.fontWeight)
+        assertEquals(0.12f, bold.background.alpha, 0.001f)
+
+        val outline = sentenceHighlightStyle("outline", color, androidx.compose.ui.text.font.FontWeight.Normal)
+        assertEquals(0.10f, outline.background.alpha, 0.001f)
+
+        val fill = sentenceHighlightStyle("fill", color, androidx.compose.ui.text.font.FontWeight.Normal)
+        assertEquals(0.34f, fill.background.alpha, 0.001f)
     }
 
     @Test fun chapterHeadingBeatsNovelTitle() {

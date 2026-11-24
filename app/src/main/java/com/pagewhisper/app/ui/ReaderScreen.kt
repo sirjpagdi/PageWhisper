@@ -66,6 +66,15 @@ fun readingTextStyle(ctx: Context, r: ReadingStyle, color: Color): TextStyle = T
     lineBreak = LineBreak.Paragraph,
 )
 
+fun sentenceHighlightStyle(style: String, color: Color, fontWeight: FontWeight?): SpanStyle {
+    val highlight = when (style) {
+        "underline" -> SpanStyle(textDecoration = TextDecoration.Underline, background = color.copy(alpha = 0.12f))
+        "outline" -> SpanStyle(textDecoration = TextDecoration.Underline, background = color.copy(alpha = 0.10f))
+        else -> SpanStyle(background = color.copy(alpha = 0.34f))
+    }
+    return highlight.copy(fontWeight = fontWeight)
+}
+
 @Composable
 fun ReaderScreen(vm: AppViewModel, listState: LazyListState) {
     val c = LocalPw.current
@@ -131,11 +140,7 @@ private fun Paragraph(group: List<Section>, active: Int, style: TextStyle, hl: C
         buildAnnotatedString {
             for (s in group) {
                 val on = s.index == active
-                val span = if (!on) null else when (hlStyle) {
-                    "underline" -> SpanStyle(textDecoration = TextDecoration.Underline, background = hl.copy(alpha = 0.12f))
-                    "outline" -> SpanStyle(textDecoration = TextDecoration.Underline, background = hl.copy(alpha = 0.10f))
-                    else -> SpanStyle(background = hl.copy(alpha = 0.34f))
-                }
+                val span = if (!on) null else sentenceHighlightStyle(hlStyle, hl, style.fontWeight)
                 if (span != null) withStyle(span) { append(s.text) } else append(s.text)
                 append(" ")
             }

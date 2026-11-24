@@ -24,6 +24,8 @@
   repeating a title already at the start of the body.
 - About screen: added the “Developed by Sir_JPagdi” credit.
 - Setup documentation now points to the repository root as the Android Studio project.
+- Fixes: reading-style preview now reflects regular/bold weight and the selected sentence highlight style; pronunciation previews
+  start the audio track before streaming generated samples, preventing long writes from stalling silently.
 - versionCode 3, versionName 0.3.0.
 
 ## 0.2.0 (synced with PageWhisper Lab 0.13.3)

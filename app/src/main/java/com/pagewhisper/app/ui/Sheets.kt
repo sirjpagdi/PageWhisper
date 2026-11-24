@@ -123,7 +123,9 @@ private fun ReadingSheet(vm: AppViewModel) {
         Text(
             buildAnnotatedString {
                 append("The rain had been falling over the old harbor town for three days. ")
-                withStyle(SpanStyle(background = hl.copy(alpha = 0.34f))) { append("Lanterns swayed above the narrow streets, and the smell of salt drifted up from the docks. ") }
+                withStyle(sentenceHighlightStyle(r.hlStyle, hl, if (r.weight == 700) FontWeight.Bold else FontWeight.Normal)) {
+                    append("Lanterns swayed above the narrow streets, and the smell of salt drifted up from the docks. ")
+                }
                 append("Mira pulled her coat tighter and stepped into the lamplight.")
             },
             Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(12.dp)).background(c.bg).border(1.dp, c.line, RoundedCornerShape(12.dp)).padding(horizontal = (r.pad + 10).dp, vertical = 8.dp),
