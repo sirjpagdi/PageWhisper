@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,7 +44,7 @@ fun PwCard(title: String? = null, modifier: Modifier = Modifier, content: @Compo
 
 @Composable
 fun Hint(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier, fontSize = 12.sp, lineHeight = 18.sp, color = LocalPw.current.muted)
+    Text(text, modifier, fontSize = 12.sp, lineHeight = 18.sp, textAlign = TextAlign.Justify, color = LocalPw.current.muted)
 }
 
 @Composable

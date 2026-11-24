@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -158,7 +159,7 @@ fun SettingsScreen(vm: AppViewModel) {
 
         PwCard("About") {
             Text("PageWhisper v${BuildConfig.VERSION_NAME}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = c.text)
-            Text("A web novel reader that speaks every chapter aloud, in natural voices that run on your phone.", fontSize = 13.sp, lineHeight = 19.sp, color = c.text)
+            Text("A web novel reader that speaks every chapter aloud, in natural voices that run on your phone.", fontSize = 13.sp, lineHeight = 19.sp, textAlign = TextAlign.Justify, color = c.text)
             Hint("Developed by Sir_JPagdi")
 
             Label("What it does")
