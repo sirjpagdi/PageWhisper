@@ -1,0 +1,909 @@
+{
+ "_about": "Shared test vectors for the web app (index.html) and the Android app. Both must produce `expected` for every `input`. Generated from the web implementation and checked by hand.",
+ "schema": 1,
+ "pronunciation": [
+  {
+   "name": "whole word, any case, keeps punctuation",
+   "rules": {
+    "global": [
+     {
+      "from": "Longxuan",
+      "to": "Long shwen",
+      "whole": true,
+      "matchCase": false
+     }
+    ],
+    "novels": {}
+   },
+   "key": "",
+   "input": "Yu Longxuan drew his sword. Longxuan's eyes narrowed; LONGXUAN! longxuan?",
+   "expected": "Yu Long shwen drew his sword. Long shwen's eyes narrowed; Long shwen! Long shwen?"
+  },
+  {
+   "name": "rule for this novel beats the global rule",
+   "rules": {
+    "global": [
+     {
+      "from": "Lin",
+      "to": "Leen",
+      "whole": true,
+      "matchCase": false
+     }
+    ],
+    "novels": {
+     "novels.test/novel/blue-moon": [
+      {
+       "from": "Lin",
+       "to": "Lynn",
+       "whole": true,
+       "matchCase": false
+      }
+     ]
+    }
+   },
+   "key": "novels.test/novel/blue-moon",
+   "input": "Lin smiled.",
+   "expected": "Lynn smiled."
+  },
+  {
+   "name": "same rules, a different novel uses the global rule",
+   "rules": {
+    "global": [
+     {
+      "from": "Lin",
+      "to": "Leen",
+      "whole": true,
+      "matchCase": false
+     }
+    ],
+    "novels": {
+     "novels.test/novel/blue-moon": [
+      {
+       "from": "Lin",
+       "to": "Lynn",
+       "whole": true,
+       "matchCase": false
+      }
+     ]
+    }
+   },
+   "key": "other.test/novel/x",
+   "input": "Lin smiled.",
+   "expected": "Leen smiled."
+  },
+  {
+   "name": "inside words when whole-word is off",
+   "rules": {
+    "global": [
+     {
+      "from": "xuan",
+      "to": "shwen",
+      "whole": false,
+      "matchCase": false
+     }
+    ],
+    "novels": {}
+   },
+   "key": "",
+   "input": "Longxuan and Xuanwu",
+   "expected": "Longshwen and Shwenwu"
+  },
+  {
+   "name": "whole word does not touch part of a longer word",
+   "rules": {
+    "global": [
+     {
+      "from": "Lin",
+      "to": "Leen",
+      "whole": true,
+      "matchCase": false
+     }
+    ],
+    "novels": {}
+   },
+   "key": "",
+   "input": "Lin, Linda and Berlin",
+   "expected": "Leen, Linda and Berlin"
+  },
+  {
+   "name": "match case",
+   "rules": {
+    "global": [
+     {
+      "from": "Ai",
+      "to": "Eye",
+      "whole": true,
+      "matchCase": true
+     }
+    ],
+    "novels": {}
+   },
+   "key": "",
+   "input": "Ai and ai and AI",
+   "expected": "Eye and ai and AI"
+  },
+  {
+   "name": "longest written form is tried first",
+   "rules": {
+    "global": [
+     {
+      "from": "Yu",
+      "to": "Yoo",
+      "whole": true,
+      "matchCase": false
+     },
+     {
+      "from": "Yu Longxuan",
+      "to": "Yoo Long shwen",
+      "whole": true,
+      "matchCase": false
+     }
+    ],
+    "novels": {}
+   },
+   "key": "",
+   "input": "Yu Longxuan met Yu Wenzhao.",
+   "expected": "Yoo Long shwen met Yoo Wenzhao."
+  },
+  {
+   "name": "empty replacement makes it silent",
+   "rules": {
+    "global": [
+     {
+      "from": "[Ding!]",
+      "to": "",
+      "whole": true,
+      "matchCase": false
+     }
+    ],
+    "novels": {}
+   },
+   "key": "",
+   "input": "A [Ding!] chime.",
+   "expected": "A  chime."
+  },
+  {
+   "name": "capital letter carries over to the replacement",
+   "rules": {
+    "global": [
+     {
+      "from": "dao",
+      "to": "dow",
+      "whole": true,
+      "matchCase": false
+     }
+    ],
+    "novels": {}
+   },
+   "key": "",
+   "input": "Dao is the way. dao.",
+   "expected": "Dow is the way. dow."
+  },
+  {
+   "name": "accented letters count as letters",
+   "rules": {
+    "global": [
+     {
+      "from": "Xiǎo",
+      "to": "Shyow",
+      "whole": true,
+      "matchCase": false
+     }
+    ],
+    "novels": {}
+   },
+   "key": "",
+   "input": "Xiǎo Yu and Xiǎoyu",
+   "expected": "Shyow Yu and Xiǎoyu"
+  },
+  {
+   "name": "dollar signs in the replacement stay literal",
+   "rules": {
+    "global": [
+     {
+      "from": "Gold",
+      "to": "$1 gold",
+      "whole": true,
+      "matchCase": false
+     }
+    ],
+    "novels": {}
+   },
+   "key": "",
+   "input": "Gold and gold",
+   "expected": "$1 gold and $1 gold"
+  },
+  {
+   "name": "no rules changes nothing",
+   "rules": {
+    "global": [],
+    "novels": {}
+   },
+   "key": "",
+   "input": "Nothing to fix here.",
+   "expected": "Nothing to fix here."
+  }
+ ],
+ "sanitizePron": {
+  "input": {
+   "global": [
+    {
+     "from": "  Lin ",
+     "to": "Leen"
+    },
+    {
+     "from": "lin",
+     "to": "dup"
+    },
+    {
+     "from": "",
+     "to": "x"
+    },
+    {
+     "from": "Ok",
+     "to": "Fine",
+     "whole": false
+    },
+    {
+     "from": 7,
+     "to": "x"
+    },
+    null
+   ],
+   "novels": {
+    "a.test/n": [
+     {
+      "from": "A",
+      "to": "B"
+     }
+    ],
+    "": [
+     {
+      "from": "Z",
+      "to": "Z"
+     }
+    ],
+    "b.test/n": []
+   }
+  },
+  "expected": {
+   "global": [
+    {
+     "from": "Lin",
+     "to": "Leen",
+     "whole": true,
+     "matchCase": false
+    },
+    {
+     "from": "Ok",
+     "to": "Fine",
+     "whole": false,
+     "matchCase": false
+    }
+   ],
+   "novels": {
+    "a.test/n": [
+     {
+      "from": "A",
+      "to": "B",
+      "whole": true,
+      "matchCase": false
+     }
+    ]
+   }
+  }
+ },
+ "cleanTitle": [
+  {
+   "input": "Turns Out, I'm In A Villain Clan! - Chapter 582: Can the Weak Stand Together? - Free Web Novel",
+   "expected": "Turns Out, I'm In A Villain Clan! - Chapter 582: Can the Weak Stand Together?"
+  },
+  {
+   "input": "Book - Chapter 5: The Novel",
+   "expected": "Book - Chapter 5: The Novel"
+  },
+  {
+   "input": "My Novel | EmpireNovel.com",
+   "expected": "My Novel"
+  },
+  {
+   "input": "Chapter 1: Start",
+   "expected": "Chapter 1: Start"
+  },
+  {
+   "input": "Just A Title",
+   "expected": "Just A Title"
+  },
+  {
+   "input": "A - B - Read Online Free",
+   "expected": "A - B"
+  },
+  {
+   "input": "  Spaced   Out  - Free Web Novel ",
+   "expected": "Spaced Out"
+  }
+ ],
+ "novelKey": [
+  {
+   "input": "https://www.empirenovel.com/novel/turns-out-im-in-a-villain-clan/572",
+   "expected": "empirenovel.com/novel/turns-out-im-in-a-villain-clan"
+  },
+  {
+   "input": "https://freewebnovel.com/novel/turns-out-im-in-a-villain-clan/chapter-582",
+   "expected": "freewebnovel.com/novel/turns-out-im-in-a-villain-clan"
+  },
+  {
+   "input": "https://x.com/novel/foo",
+   "expected": "x.com/novel/foo"
+  },
+  {
+   "input": "https://x.com/book123",
+   "expected": "x.com/book123"
+  },
+  {
+   "input": "https://x.com/",
+   "expected": "x.com/"
+  },
+  {
+   "input": "https://Www.Example.com/a/b/12?x=1",
+   "expected": "example.com/a/b"
+  }
+ ],
+ "guessNext": [
+  {
+   "input": "https://x.com/novel/foo/12",
+   "expected": "https://x.com/novel/foo/13"
+  },
+  {
+   "input": "https://x.com/novel/foo/chapter-9",
+   "expected": "https://x.com/novel/foo/chapter-10"
+  },
+  {
+   "input": "https://x.com/novel/foo/chapter-99.html",
+   "expected": "https://x.com/novel/foo/chapter-100.html"
+  },
+  {
+   "input": "https://x.com/novel/foo",
+   "expected": ""
+  },
+  {
+   "input": "https://x.com/novel/foo/12/",
+   "expected": "https://x.com/novel/foo/13/"
+  }
+ ],
+ "titleFromUrl": [
+  {
+   "input": "https://x.com/novel/turns-out-im-in-a-villain-clan/572",
+   "expected": "Turns Out Im In A Villain Clan"
+  },
+  {
+   "input": "https://x.com/book/the_red-sun.html",
+   "expected": "The Red Sun"
+  },
+  {
+   "input": "https://x.com/",
+   "expected": "X"
+  }
+ ],
+ "splitForSpeech": [
+  {
+   "max": 60,
+   "text": "The rain had been falling for three days. Lanterns swayed above the streets, and the smell of salt drifted up from the docks. “Stop!” she said. He did not.",
+   "expected": [
+    "The rain had been falling for three days.",
+    "Lanterns swayed above the streets, and the smell of salt",
+    "drifted up from the docks. “Stop!” she said. He did not."
+   ]
+  },
+  {
+   "max": 30,
+   "text": "A_very_long_unbroken_word_that_exceeds_the_limit_for_sure and then more.",
+   "expected": [
+    "A_very_long_unbroken_word_that",
+    "_exceeds_the_limit_for_sure",
+    "and then more."
+   ]
+  },
+  {
+   "max": 200,
+   "text": "Short one. Two.",
+   "expected": [
+    "Short one. Two."
+   ]
+  },
+  {
+   "max": 50,
+   "text": "Wait... what? No! Yes.",
+   "expected": [
+    "Wait... what? No! Yes."
+   ]
+  }
+ ],
+ "speechText": [
+  {
+   "input": "**Bold** and _italic_ [System] ping #1 | pipe",
+   "expected": "Bold and italic System ping 1 pipe"
+  },
+  {
+   "input": "***",
+   "expected": ""
+  },
+  {
+   "input": "   ",
+   "expected": ""
+  },
+  {
+   "input": "Hello  there ~ friend",
+   "expected": "Hello there friend"
+  },
+  {
+   "input": "12:30 pm.",
+   "expected": "12:30 pm."
+  }
+ ],
+ "backupMerge": [
+  {
+   "local": {
+    "novels": [
+     {
+      "id": "n1",
+      "title": "Blue Moon",
+      "url": "https://novels.test/novel/blue-moon/12",
+      "key": "novels.test/novel/blue-moon",
+      "chapter": "Ch 12",
+      "updated": 2000
+     },
+     {
+      "id": "n2",
+      "title": "Red Sun",
+      "url": "https://r.test/novel/red-sun/5",
+      "key": "r.test/novel/red-sun",
+      "chapter": "Ch 5",
+      "updated": 1000
+     }
+    ],
+    "covers": {
+     "n1": "data:image/jpeg;base64,AAAA"
+    },
+    "chapters": [
+     {
+      "title": "A",
+      "text": "aaa",
+      "url": "https://a/1",
+      "next": ""
+     }
+    ],
+    "pron": {
+     "global": [
+      {
+       "from": "Lin",
+       "to": "Leen",
+       "whole": true,
+       "matchCase": false
+      }
+     ],
+     "novels": {}
+    }
+   },
+   "backup": {
+    "novels": [
+     {
+      "id": "b1",
+      "title": "Blue Moon (old)",
+      "url": "https://novels.test/novel/blue-moon/3",
+      "key": "novels.test/novel/blue-moon",
+      "chapter": "Ch 3",
+      "updated": 500,
+      "cover": "data:image/jpeg;base64,BBBB"
+     },
+     {
+      "id": "b2",
+      "title": "Red Sun",
+      "url": "https://r.test/novel/red-sun/9",
+      "key": "r.test/novel/red-sun",
+      "chapter": "Ch 9",
+      "updated": 3000,
+      "cover": "data:image/jpeg;base64,CCCC"
+     },
+     {
+      "id": "l1",
+      "title": "Lost Ink",
+      "url": "https://l.test/novel/lost-ink/1",
+      "key": "l.test/novel/lost-ink",
+      "chapter": "Ch 1",
+      "updated": 10,
+      "cover": null
+     }
+    ],
+    "savedChapters": [
+     {
+      "title": "A",
+      "text": "aaa",
+      "url": "https://a/1",
+      "next": ""
+     },
+     {
+      "title": "B",
+      "text": "bbb",
+      "url": "https://b/1",
+      "next": ""
+     }
+    ],
+    "pronunciations": {
+     "global": [
+      {
+       "from": "lin",
+       "to": "Lynn",
+       "whole": true,
+       "matchCase": false
+      },
+      {
+       "from": "Yu",
+       "to": "Yoo",
+       "whole": true,
+       "matchCase": false
+      }
+     ],
+     "novels": {
+      "r.test/novel/red-sun": [
+       {
+        "from": "Sun",
+        "to": "Sunn",
+        "whole": true,
+        "matchCase": false
+       }
+      ]
+     }
+    }
+   },
+   "expected": {
+    "novels": [
+     {
+      "id": "n1",
+      "title": "Blue Moon",
+      "url": "https://novels.test/novel/blue-moon/12",
+      "key": "novels.test/novel/blue-moon",
+      "chapter": "Ch 12",
+      "updated": 2000
+     },
+     {
+      "id": "n2",
+      "title": "Red Sun",
+      "url": "https://r.test/novel/red-sun/9",
+      "key": "r.test/novel/red-sun",
+      "chapter": "Ch 9",
+      "updated": 3000
+     },
+     {
+      "id": "l1",
+      "title": "Lost Ink",
+      "url": "https://l.test/novel/lost-ink/1",
+      "key": "l.test/novel/lost-ink",
+      "chapter": "Ch 1",
+      "updated": 10
+     }
+    ],
+    "covers": {
+     "n1": "data:image/jpeg;base64,AAAA",
+     "n2": "data:image/jpeg;base64,CCCC"
+    },
+    "chapters": [
+     {
+      "title": "A",
+      "text": "aaa",
+      "url": "https://a/1",
+      "next": ""
+     },
+     {
+      "title": "B",
+      "text": "bbb",
+      "url": "https://b/1",
+      "next": ""
+     }
+    ],
+    "pron": {
+     "global": [
+      {
+       "from": "Lin",
+       "to": "Leen",
+       "whole": true,
+       "matchCase": false
+      },
+      {
+       "from": "Yu",
+       "to": "Yoo",
+       "whole": true,
+       "matchCase": false
+      }
+     ],
+     "novels": {
+      "r.test/novel/red-sun": [
+       {
+        "from": "Sun",
+        "to": "Sunn",
+        "whole": true,
+        "matchCase": false
+       }
+      ]
+     }
+    }
+   }
+  }
+ ],
+ "chapterNumber": [
+  {
+   "url": "https://x.com/novel/foo/chapter-12",
+   "text": "",
+   "expected": 12
+  },
+  {
+   "url": "https://x.com/novel/foo/12",
+   "text": "",
+   "expected": 12
+  },
+  {
+   "url": "https://x.com/novel/foo/84712",
+   "text": "Chapter 5: Start",
+   "expected": 5
+  },
+  {
+   "url": "https://x.com/novel/foo/intro",
+   "text": "Prologue",
+   "expected": null
+  },
+  {
+   "url": "https://x.com/novel/foo/chapter-1-2",
+   "text": "",
+   "expected": 2
+  },
+  {
+   "url": "https://x.com/novel/foo/ch_7.html",
+   "text": "",
+   "expected": 7
+  },
+  {
+   "url": "https://x.com/novel/foo/x",
+   "text": "Ep. 3.5 bonus",
+   "expected": 3.5
+  },
+  {
+   "url": "not a url",
+   "text": "Chapter 9",
+   "expected": 9
+  },
+  {
+   "url": "not a url",
+   "text": "",
+   "expected": null
+  }
+ ],
+ "urlForNumber": [
+  {
+   "url": "https://x.com/novel/foo/chapter-12",
+   "n": 3,
+   "expected": "https://x.com/novel/foo/chapter-3"
+  },
+  {
+   "url": "https://x.com/novel/foo/12?x=1#a",
+   "n": 40,
+   "expected": "https://x.com/novel/foo/40"
+  },
+  {
+   "url": "https://x.com/novel/foo",
+   "n": 1,
+   "expected": ""
+  },
+  {
+   "url": "https://x.com/novel/foo/ch-9.html",
+   "n": 10,
+   "expected": "https://x.com/novel/foo/ch-10.html"
+  }
+ ],
+ "pickChapters": [
+  {
+   "name": "descending list with noise, duplicates, other hosts and list pages",
+   "key": "novels.test/novel/blue-moon",
+   "links": [
+    {
+     "href": "https://novels.test/novel/blue-moon/chapter-3",
+     "text": "Chapter 3: The Gate"
+    },
+    {
+     "href": "https://novels.test/novel/blue-moon/chapter-1",
+     "text": "Chapter 1: Start"
+    },
+    {
+     "href": "https://novels.test/novel/blue-moon/chapter-2",
+     "text": "  Chapter 2:   Rain "
+    },
+    {
+     "href": "https://novels.test/novel/blue-moon/chapter-2#comments",
+     "text": "Chapter 2 (comments)"
+    },
+    {
+     "href": "https://novels.test/novel/blue-moon/reviews",
+     "text": "Reviews"
+    },
+    {
+     "href": "https://novels.test/novel/blue-moon/chapter-list",
+     "text": "Chapter List"
+    },
+    {
+     "href": "https://novels.test/novel/blue-moon/chapters",
+     "text": "Chapters"
+    },
+    {
+     "href": "https://www.novels.test/novel/blue-moon/chapter-4",
+     "text": "Chapter 4"
+    },
+    {
+     "href": "https://other.test/novel/blue-moon/chapter-9",
+     "text": "Chapter 9"
+    },
+    {
+     "href": "https://novels.test/novel/other-book/chapter-1",
+     "text": "Chapter 1"
+    },
+    {
+     "href": "javascript:void(0)",
+     "text": "Next"
+    }
+   ],
+   "expected": [
+    {
+     "num": 1,
+     "title": "Chapter 1: Start",
+     "url": "https://novels.test/novel/blue-moon/chapter-1"
+    },
+    {
+     "num": 2,
+     "title": "Chapter 2: Rain",
+     "url": "https://novels.test/novel/blue-moon/chapter-2"
+    },
+    {
+     "num": 3,
+     "title": "Chapter 3: The Gate",
+     "url": "https://novels.test/novel/blue-moon/chapter-3"
+    },
+    {
+     "num": 4,
+     "title": "Chapter 4",
+     "url": "https://www.novels.test/novel/blue-moon/chapter-4"
+    }
+   ]
+  },
+  {
+   "name": "numeric-only chapter links",
+   "key": "empirenovel.com/novel/turns-out",
+   "links": [
+    {
+     "href": "https://empirenovel.com/novel/turns-out/572",
+     "text": "The Third"
+    },
+    {
+     "href": "https://empirenovel.com/novel/turns-out/570",
+     "text": "Chapter 570: A"
+    },
+    {
+     "href": "https://empirenovel.com/novel/turns-out/571",
+     "text": ""
+    }
+   ],
+   "expected": [
+    {
+     "num": 570,
+     "title": "Chapter 570: A",
+     "url": "https://empirenovel.com/novel/turns-out/570"
+    },
+    {
+     "num": 571,
+     "title": "Chapter 571",
+     "url": "https://empirenovel.com/novel/turns-out/571"
+    },
+    {
+     "num": 572,
+     "title": "The Third",
+     "url": "https://empirenovel.com/novel/turns-out/572"
+    }
+   ]
+  },
+  {
+   "name": "chapters outside the novel path",
+   "key": "x.test/novel/foo",
+   "links": [
+    {
+     "href": "https://x.test/chapter/foo-chapter-3",
+     "text": "Chapter 3"
+    },
+    {
+     "href": "https://x.test/chapter/foo-chapter-1",
+     "text": "Chapter 1"
+    },
+    {
+     "href": "https://x.test/chapter/foo-chapter-2",
+     "text": "Chapter 2"
+    },
+    {
+     "href": "https://x.test/about",
+     "text": "About"
+    }
+   ],
+   "expected": [
+    {
+     "num": 1,
+     "title": "Chapter 1",
+     "url": "https://x.test/chapter/foo-chapter-1"
+    },
+    {
+     "num": 2,
+     "title": "Chapter 2",
+     "url": "https://x.test/chapter/foo-chapter-2"
+    },
+    {
+     "num": 3,
+     "title": "Chapter 3",
+     "url": "https://x.test/chapter/foo-chapter-3"
+    }
+   ]
+  },
+  {
+   "name": "no chapter links at all",
+   "key": "x.test/novel/foo",
+   "links": [
+    {
+     "href": "https://x.test/novel/foo/about",
+     "text": "About"
+    },
+    {
+     "href": "https://x.test/novel/foo/contact",
+     "text": "Contact"
+    }
+   ],
+   "expected": []
+  },
+  {
+   "name": "mostly unnumbered keeps page order",
+   "key": "x.test/novel/foo",
+   "links": [
+    {
+     "href": "https://x.test/novel/foo/chapter-1",
+     "text": "Chapter 1"
+    },
+    {
+     "href": "https://x.test/novel/foo/chapter-two",
+     "text": "Chapter Two"
+    },
+    {
+     "href": "https://x.test/novel/foo/chapter-three",
+     "text": "Chapter Three"
+    },
+    {
+     "href": "https://x.test/novel/foo/chapter-four",
+     "text": "Chapter Four"
+    }
+   ],
+   "expected": [
+    {
+     "num": 1,
+     "title": "Chapter 1",
+     "url": "https://x.test/novel/foo/chapter-1"
+    },
+    {
+     "num": null,
+     "title": "Chapter Two",
+     "url": "https://x.test/novel/foo/chapter-two"
+    },
+    {
+     "num": null,
+     "title": "Chapter Three",
+     "url": "https://x.test/novel/foo/chapter-three"
+    },
+    {
+     "num": null,
+     "title": "Chapter Four",
+     "url": "https://x.test/novel/foo/chapter-four"
+    }
+   ]
+  }
+ ]
+}
