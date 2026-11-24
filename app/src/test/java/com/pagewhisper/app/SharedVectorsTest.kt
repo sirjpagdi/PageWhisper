@@ -7,6 +7,7 @@ import com.pagewhisper.app.data.LocalData
 import com.pagewhisper.app.model.Novel
 import com.pagewhisper.app.model.PronRule
 import com.pagewhisper.app.model.PronSet
+import com.pagewhisper.app.model.ReadingStyle
 import com.pagewhisper.app.model.SavedChapter
 import com.pagewhisper.app.text.ChapterList
 import com.pagewhisper.app.text.Extractor
@@ -57,6 +58,12 @@ class SharedVectorsTest {
             val o = c.jsonObject
             val engine = PronEngine(pronSet(o["rules"]!!.jsonObject))
             assertEquals(o["name"]!!.str(), o["expected"]!!.str(), engine.apply(o["input"]!!.str(), o["key"]!!.str()))
+        }
+    }
+
+    @Test fun newReaderFontsAreKeptBySanitizer() {
+        for (font in listOf("ebgaramond", "crimsonpro", "sourceserif4", "montserrat")) {
+            assertEquals(font, ReadingStyle(font = font).sanitized().font)
         }
     }
 

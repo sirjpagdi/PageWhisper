@@ -74,7 +74,10 @@ data class ReadingStyle(
     )
 
     companion object {
-        val FONT_IDS = listOf("serif", "sans", "mono", "literata", "merriweather", "lora", "atkinson", "lexend", "dyslexic")
+        val FONT_IDS = listOf(
+            "serif", "sans", "mono", "literata", "merriweather", "lora", "atkinson", "lexend", "dyslexic",
+            "ebgaramond", "crimsonpro", "sourceserif4", "montserrat",
+        )
         val THEME_IDS = listOf("dark", "amoled", "sepia", "light")
         val ACCENT_IDS = listOf("auto", "purple", "blue", "teal", "green", "rose", "orange")
         val HIGHLIGHT_IDS = listOf("violet", "gold", "green", "blue", "pink", "orange")

@@ -115,7 +115,7 @@ violet `139,92,246` · gold `234,179,8` · green `34,197,94` · blue `59,130,246
 
 | Setting | Compose |
 |---|---|
-| `font` | `FontFamily` from `res/font` |
+| `font` | Bundled reader `FontFamily` from `res/font` (Montserrat is the app-wide UI font; variable fonts use `wght`) |
 | `size` | `TextStyle.fontSize` in `sp` |
 | `line` | `lineHeight = fontSize * line` |
 | `para` | spacing between paragraphs: `para * fontSize` |

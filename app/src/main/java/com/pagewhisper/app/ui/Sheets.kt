@@ -106,6 +106,7 @@ fun Sheets(vm: AppViewModel) {
 private val FONTS = listOf(
     "serif" to "Serif", "sans" to "Sans", "mono" to "Mono", "literata" to "Literata", "merriweather" to "Merriweather",
     "lora" to "Lora", "atkinson" to "Atkinson Hyperlegible", "lexend" to "Lexend", "dyslexic" to "OpenDyslexic",
+    "ebgaramond" to "EB Garamond", "crimsonpro" to "Crimson Pro", "sourceserif4" to "Source Serif 4", "montserrat" to "Montserrat",
 )
 
 // ======================= reading style =======================

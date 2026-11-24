@@ -34,18 +34,23 @@ here, and `FEATURES.md` is the spec for both.
 
 ## Fonts
 
-Serif, Sans and Mono are built in. The other fonts are used if their files are in `app/src/main/res/font/` (lowercase, underscores):
+Serif, Sans and Mono are built in. Montserrat is used throughout the app UI; the reader's font remains independently selectable.
+The following bundled reader fonts work offline; variable fonts include multiple weights:
 
-| Font | Files |
+| Font | Bundled file(s) |
 |---|---|
-| Literata | `font_literata.ttf`, `font_literata_bold.ttf` |
-| Merriweather | `font_merriweather.ttf`, `font_merriweather_bold.ttf` |
-| Lora | `font_lora.ttf`, `font_lora_bold.ttf` |
+| Literata | `font_literata.ttf` |
+| Merriweather | `font_merriweather.ttf` |
+| Lora | `font_lora.ttf` |
 | Atkinson Hyperlegible | `font_atkinson.ttf`, `font_atkinson_bold.ttf` |
-| Lexend | `font_lexend.ttf`, `font_lexend_bold.ttf` |
-| OpenDyslexic | `font_dyslexic.ttf`, `font_dyslexic_bold.ttf` |
+| Lexend | `font_lexend.ttf` |
+| OpenDyslexic | `font_dyslexic.otf`, `font_dyslexic_bold.otf` |
+| EB Garamond | `font_ebgaramond.ttf` |
+| Crimson Pro | `font_crimsonpro.ttf` |
+| Source Serif 4 | `font_sourceserif4.ttf` |
+| Montserrat | `font_montserrat.ttf` |
 
-All are open-licensed (check each licence before a Play release). Without a file, a similar built-in font is used. The bold file is optional.
+All font licenses are included in `app/src/main/assets/font-licenses/`. The fonts add about 9.1 MB to the app.
 
 ## What is in the project
 

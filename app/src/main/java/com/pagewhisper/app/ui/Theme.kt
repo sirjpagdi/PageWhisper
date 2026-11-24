@@ -3,14 +3,19 @@ package com.pagewhisper.app.ui
 import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 
 /** The four themes. Colours are identical to the web app. */
@@ -115,6 +120,9 @@ fun highlightColor(id: String): Color = when (id) {
 @Composable
 fun PageWhisperTheme(theme: String, accent: String = "auto", accentTone: Int = 0, content: @Composable () -> Unit) {
     val c = pwColors(theme, accent, accentTone)
+    val context = LocalContext.current
+    val appFont = remember(context) { fontFamilyFor(context, "montserrat") }
+    val typography = remember(appFont) { typographyWithFont(appFont) }
     val scheme = if (c.light) {
         lightColorScheme(primary = c.accent, onPrimary = Color.White, background = c.bg, onBackground = c.text, surface = c.panel, onSurface = c.text,
             surfaceVariant = c.panel2, onSurfaceVariant = c.muted, outline = c.line, error = c.red)
@@ -122,13 +130,41 @@ fun PageWhisperTheme(theme: String, accent: String = "auto", accentTone: Int = 0
         darkColorScheme(primary = c.accent, onPrimary = Color.White, background = c.bg, onBackground = c.text, surface = c.panel, onSurface = c.text,
             surfaceVariant = c.panel2, onSurfaceVariant = c.muted, outline = c.line, error = c.red)
     }
-    CompositionLocalProvider(LocalPw provides c) { MaterialTheme(colorScheme = scheme, content = content) }
+    CompositionLocalProvider(LocalPw provides c) { MaterialTheme(colorScheme = scheme, typography = typography, content = content) }
 }
+
+private fun typographyWithFont(fontFamily: FontFamily): Typography {
+    val base = Typography()
+    return base.copy(
+        displayLarge = base.displayLarge.copy(fontFamily = fontFamily),
+        displayMedium = base.displayMedium.copy(fontFamily = fontFamily),
+        displaySmall = base.displaySmall.copy(fontFamily = fontFamily),
+        headlineLarge = base.headlineLarge.copy(fontFamily = fontFamily),
+        headlineMedium = base.headlineMedium.copy(fontFamily = fontFamily),
+        headlineSmall = base.headlineSmall.copy(fontFamily = fontFamily),
+        titleLarge = base.titleLarge.copy(fontFamily = fontFamily),
+        titleMedium = base.titleMedium.copy(fontFamily = fontFamily),
+        titleSmall = base.titleSmall.copy(fontFamily = fontFamily),
+        bodyLarge = base.bodyLarge.copy(fontFamily = fontFamily),
+        bodyMedium = base.bodyMedium.copy(fontFamily = fontFamily),
+        bodySmall = base.bodySmall.copy(fontFamily = fontFamily),
+        labelLarge = base.labelLarge.copy(fontFamily = fontFamily),
+        labelMedium = base.labelMedium.copy(fontFamily = fontFamily),
+        labelSmall = base.labelSmall.copy(fontFamily = fontFamily),
+    )
+}
+
+private val VARIABLE_FONT_IDS = setOf(
+    "literata", "merriweather", "lora", "lexend", "ebgaramond", "crimsonpro", "sourceserif4", "montserrat",
+)
+
+private val VARIABLE_FONT_WEIGHTS = listOf(FontWeight.W400, FontWeight.W500, FontWeight.W600, FontWeight.W700)
 
 /**
  * Serif, Sans and Mono are built in. The other fonts are used if their files are in app/src/main/res/font
  * (see README.md, "Fonts"); otherwise a similar built-in font is used.
  */
+@OptIn(ExperimentalTextApi::class)
 fun fontFamilyFor(ctx: Context, id: String): FontFamily {
     when (id) {
         "sans" -> return FontFamily.SansSerif
@@ -137,7 +173,13 @@ fun fontFamilyFor(ctx: Context, id: String): FontFamily {
     }
     val res = ctx.resources
     val regular = res.getIdentifier("font_$id", "font", ctx.packageName)
-    if (regular == 0) return if (id in listOf("atkinson", "lexend", "dyslexic")) FontFamily.SansSerif else FontFamily.Serif
+    if (regular == 0) return if (id in listOf("atkinson", "lexend", "dyslexic", "montserrat")) FontFamily.SansSerif else FontFamily.Serif
     val bold = res.getIdentifier("font_${id}_bold", "font", ctx.packageName)
-    return if (bold != 0) FontFamily(Font(regular, FontWeight.Normal), Font(bold, FontWeight.Bold)) else FontFamily(Font(regular, FontWeight.Normal))
+    if (bold != 0) return FontFamily(Font(regular, FontWeight.Normal), Font(bold, FontWeight.Bold))
+    if (id !in VARIABLE_FONT_IDS) return FontFamily(Font(regular, FontWeight.Normal))
+    return FontFamily(
+        *VARIABLE_FONT_WEIGHTS.map { weight ->
+            Font(regular, weight, variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)))
+        }.toTypedArray(),
+    )
 }
