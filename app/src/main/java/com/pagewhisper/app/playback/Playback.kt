@@ -365,25 +365,21 @@ object Playback {
         requestFocus()
         try {
             withContext(Dispatchers.IO) {
-                val minBuffer = AudioTrack.getMinBufferSize(sr, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)
-                if (minBuffer < 0) throw IllegalStateException("Could not configure audio output ($minBuffer).")
-                val t = newTrack(sr, max(minBuffer, sr * 8))
+                val t = AudioTrack.Builder()
+                    .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
+                    .setAudioFormat(AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_FLOAT).setSampleRate(sr).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
+                    .setBufferSizeInBytes(pcm.size * Float.SIZE_BYTES)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build()
                 try {
-                    t.play()
                     var offset = 0
                     while (offset < pcm.size) {
                         val written = t.write(pcm, offset, pcm.size - offset, AudioTrack.WRITE_BLOCKING)
-                        if (written < 0) throw IllegalStateException("Audio preview write error $written.")
-                        if (written == 0) delay(10)
-                        else offset += written
+                        if (written <= 0) throw IllegalStateException("Audio preview write error $written.")
+                        offset += written
                     }
-                    val deadline = SystemClock.elapsedRealtime() + pcm.size * 1000L / sr + 5000
-                    while ((t.playbackHeadPosition.toLong() and 0xFFFFFFFFL) < pcm.size && SystemClock.elapsedRealtime() < deadline) {
-                        delay(20)
-                    }
-                    if ((t.playbackHeadPosition.toLong() and 0xFFFFFFFFL) < pcm.size) {
-                        throw IllegalStateException("Audio preview timed out.")
-                    }
+                    t.play()
+                    delay(pcm.size * 1000L / sr + 300)
                 } finally { t.release() }
             }
         } finally { abandonFocus() }

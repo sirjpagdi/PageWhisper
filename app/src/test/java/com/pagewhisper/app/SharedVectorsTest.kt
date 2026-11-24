@@ -115,6 +115,7 @@ class SharedVectorsTest {
         assertEquals(0.12f, bold.background.alpha, 0.001f)
 
         val outline = sentenceHighlightStyle("outline", color, androidx.compose.ui.text.font.FontWeight.Normal)
+        assertEquals(null, outline.textDecoration)
         assertEquals(0.10f, outline.background.alpha, 0.001f)
 
         val fill = sentenceHighlightStyle("fill", color, androidx.compose.ui.text.font.FontWeight.Normal)

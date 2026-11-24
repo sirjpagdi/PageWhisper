@@ -29,7 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
@@ -69,7 +75,7 @@ fun readingTextStyle(ctx: Context, r: ReadingStyle, color: Color): TextStyle = T
 fun sentenceHighlightStyle(style: String, color: Color, fontWeight: FontWeight?): SpanStyle {
     val highlight = when (style) {
         "underline" -> SpanStyle(textDecoration = TextDecoration.Underline, background = color.copy(alpha = 0.12f))
-        "outline" -> SpanStyle(textDecoration = TextDecoration.Underline, background = color.copy(alpha = 0.10f))
+        "outline" -> SpanStyle(background = color.copy(alpha = 0.10f))
         else -> SpanStyle(background = color.copy(alpha = 0.34f))
     }
     return highlight.copy(fontWeight = fontWeight)
@@ -149,7 +155,39 @@ private fun Paragraph(group: List<Section>, active: Int, style: TextStyle, hl: C
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     Text(
         annotated, style = style, onTextLayout = { layout = it },
-        modifier = Modifier.fillMaxWidth().padding(bottom = spacing).pointerInput(group) {
+        modifier = Modifier.fillMaxWidth().padding(bottom = spacing).drawBehind {
+            if (hlStyle == "outline" && active >= 0) {
+                val sectionIndex = group.indexOfFirst { it.index == active }
+                val start = starts.getOrNull(sectionIndex)
+                val section = group.getOrNull(sectionIndex)
+                val textLayout = layout
+                if (start != null && section != null && textLayout != null) {
+                    val lineRects = HashMap<Int, Rect>()
+                    for (offset in start until start + section.text.length) {
+                        val box = textLayout.getBoundingBox(offset)
+                        val line = textLayout.getLineForOffset(offset)
+                        val rect = Rect(box.left, box.top, box.right, box.bottom)
+                        val existing = lineRects[line]
+                        lineRects[line] = if (existing == null) rect else Rect(
+                            minOf(existing.left, rect.left),
+                            minOf(existing.top, rect.top),
+                            maxOf(existing.right, rect.right),
+                            maxOf(existing.bottom, rect.bottom),
+                        )
+                    }
+                    val radius = 3.dp.toPx()
+                    for (rect in lineRects.values) {
+                        drawRoundRect(
+                            color = hl,
+                            topLeft = Offset(rect.left, rect.top),
+                            size = Size(rect.width, rect.height),
+                            cornerRadius = CornerRadius(radius, radius),
+                            style = Stroke(width = 2.dp.toPx()),
+                        )
+                    }
+                }
+            }
+        }.pointerInput(group) {
             detectTapGestures { pos -> // tap a sentence to start from there
                 val off = layout?.getOffsetForPosition(pos) ?: return@detectTapGestures
                 val i = starts.indexOfLast { it <= off }
