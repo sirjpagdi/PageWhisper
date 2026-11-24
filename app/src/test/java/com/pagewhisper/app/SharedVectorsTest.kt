@@ -1,5 +1,6 @@
 package com.pagewhisper.app
 
+import androidx.compose.ui.graphics.Color
 import com.pagewhisper.app.data.BackupCore
 import com.pagewhisper.app.data.CleanBackup
 import com.pagewhisper.app.data.CleanNovel
@@ -14,6 +15,8 @@ import com.pagewhisper.app.text.Extractor
 import com.pagewhisper.app.text.Pron
 import com.pagewhisper.app.text.PronEngine
 import com.pagewhisper.app.text.TextTools
+import com.pagewhisper.app.ui.accentContentColor
+import com.pagewhisper.app.ui.pwColors
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -65,6 +68,11 @@ class SharedVectorsTest {
         for (font in listOf("ebgaramond", "crimsonpro", "sourceserif4", "montserrat")) {
             assertEquals(font, ReadingStyle(font = font).sanitized().font)
         }
+    }
+
+    @Test fun accentContentColorTracksAccentLightness() {
+        assertEquals(Color.Black, accentContentColor(pwColors("dark", "purple", 35).accent))
+        assertEquals(Color.White, accentContentColor(pwColors("dark", "purple", -35).accent))
     }
 
     @Test fun sanitizePron() {

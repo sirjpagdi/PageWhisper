@@ -168,11 +168,12 @@ private fun ToolBtn(modifier: Modifier, text: String? = null, icon: String? = nu
     val c = LocalPw.current
     Box(
         modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(12.dp))
-            .background(if (selected) c.accent.copy(alpha = 0.22f) else c.panel2)
+            .background(if (selected) c.accent else c.panel2)
             .alpha(if (enabled) 1f else 0.4f).clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        if (icon != null) PwIcon(icon, tint = if (selected) c.accent2 else c.text, size = 20.dp)
-        else Text(text.orEmpty(), fontSize = 13.sp, color = if (selected) c.accent2 else c.text, maxLines = 1)
+        val contentColor = if (selected) accentContentColor(c.accent) else c.text
+        if (icon != null) PwIcon(icon, tint = contentColor, size = 20.dp)
+        else Text(text.orEmpty(), fontSize = 13.sp, color = contentColor, maxLines = 1)
     }
 }

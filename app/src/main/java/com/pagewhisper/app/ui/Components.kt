@@ -24,7 +24,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -64,7 +63,7 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
     val c = LocalPw.current
     Button(
         onClick, modifier.heightIn(min = 48.dp), enabled = enabled, shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = c.accent, contentColor = Color.White),
+        colors = ButtonDefaults.buttonColors(containerColor = c.accent, contentColor = accentContentColor(c.accent)),
     ) {
         if (icon != null) { PwIcon(icon, size = 20.dp); Box(Modifier.size(8.dp)) }
         Text(text, fontWeight = FontWeight.SemiBold)
@@ -78,8 +77,8 @@ fun SoftButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
         onClick, modifier.heightIn(min = 44.dp), enabled = enabled, shape = RoundedCornerShape(12.dp),
         border = BorderStroke(1.dp, if (selected) c.accent else c.line),
         colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = if (selected) c.accent.copy(alpha = 0.22f) else c.panel2,
-            contentColor = if (selected) c.accent2 else c.text,
+            containerColor = if (selected) c.accent else c.panel2,
+            contentColor = if (selected) accentContentColor(c.accent) else c.text,
             disabledContainerColor = c.panel2.copy(alpha = 0.4f), disabledContentColor = c.muted,
         ),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 8.dp),

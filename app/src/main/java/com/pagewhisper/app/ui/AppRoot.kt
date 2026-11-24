@@ -49,7 +49,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -172,12 +171,13 @@ private fun PlayerButton(icon: String, label: String, onClick: () -> Unit, modif
     val c = LocalPw.current
     Row(
         modifier.heightIn(min = 50.dp).clip(RoundedCornerShape(12.dp))
-            .background(if (primary) c.accent else if (text.isNotEmpty()) c.accent.copy(alpha = 0.22f) else c.panel2)
+            .background(if (primary || text.isNotEmpty()) c.accent else c.panel2)
             .alpha(if (enabled) 1f else 0.4f).clickable(enabled = enabled, onClick = onClick),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
-        PwIcon(icon, tint = if (primary) Color.White else if (text.isNotEmpty()) c.accent2 else c.text)
-        if (text.isNotEmpty()) Text(text, Modifier.padding(start = 4.dp), fontSize = 12.sp, color = c.accent2)
+        val contentColor = if (primary || text.isNotEmpty()) accentContentColor(c.accent) else c.text
+        PwIcon(icon, tint = contentColor)
+        if (text.isNotEmpty()) Text(text, Modifier.padding(start = 4.dp), fontSize = 12.sp, color = contentColor)
     }
 }
 

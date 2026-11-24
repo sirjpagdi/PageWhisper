@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import kotlin.math.pow
 
 /** The four themes. Colours are identical to the web app. */
 data class PwColors(
@@ -106,6 +107,14 @@ fun pwColors(theme: String, accent: String, tone: Int): PwColors {
     return base.copy(accent = shadeAccent(main, tone), accent2 = shadeAccent(second, tone))
 }
 
+fun accentContentColor(accent: Color): Color {
+    fun linear(channel: Float): Float =
+        if (channel <= 0.04045f) channel / 12.92f else ((channel + 0.055f) / 1.055f).pow(2.4f)
+
+    val luminance = 0.2126f * linear(accent.red) + 0.7152f * linear(accent.green) + 0.0722f * linear(accent.blue)
+    return if (luminance >= 0.179f) Color.Black else Color.White
+}
+
 val LocalPw = staticCompositionLocalOf { pwColors("dark") }
 
 fun highlightColor(id: String): Color = when (id) {
@@ -124,10 +133,10 @@ fun PageWhisperTheme(theme: String, accent: String = "auto", accentTone: Int = 0
     val appFont = remember(context) { fontFamilyFor(context, "montserrat") }
     val typography = remember(appFont) { typographyWithFont(appFont) }
     val scheme = if (c.light) {
-        lightColorScheme(primary = c.accent, onPrimary = Color.White, background = c.bg, onBackground = c.text, surface = c.panel, onSurface = c.text,
+        lightColorScheme(primary = c.accent, onPrimary = accentContentColor(c.accent), background = c.bg, onBackground = c.text, surface = c.panel, onSurface = c.text,
             surfaceVariant = c.panel2, onSurfaceVariant = c.muted, outline = c.line, error = c.red)
     } else {
-        darkColorScheme(primary = c.accent, onPrimary = Color.White, background = c.bg, onBackground = c.text, surface = c.panel, onSurface = c.text,
+        darkColorScheme(primary = c.accent, onPrimary = accentContentColor(c.accent), background = c.bg, onBackground = c.text, surface = c.panel, onSurface = c.text,
             surfaceVariant = c.panel2, onSurfaceVariant = c.muted, outline = c.line, error = c.red)
     }
     CompositionLocalProvider(LocalPw provides c) { MaterialTheme(colorScheme = scheme, typography = typography, content = content) }
@@ -159,6 +168,7 @@ private val VARIABLE_FONT_IDS = setOf(
 )
 
 private val VARIABLE_FONT_WEIGHTS = listOf(FontWeight.W400, FontWeight.W500, FontWeight.W600, FontWeight.W700)
+private val UI_FONT_WEIGHTS = listOf(FontWeight.W500, FontWeight.W600, FontWeight.W700)
 
 /**
  * Serif, Sans and Mono are built in. The other fonts are used if their files are in app/src/main/res/font
@@ -177,8 +187,9 @@ fun fontFamilyFor(ctx: Context, id: String): FontFamily {
     val bold = res.getIdentifier("font_${id}_bold", "font", ctx.packageName)
     if (bold != 0) return FontFamily(Font(regular, FontWeight.Normal), Font(bold, FontWeight.Bold))
     if (id !in VARIABLE_FONT_IDS) return FontFamily(Font(regular, FontWeight.Normal))
+    val weights = if (id == "montserrat") UI_FONT_WEIGHTS else VARIABLE_FONT_WEIGHTS
     return FontFamily(
-        *VARIABLE_FONT_WEIGHTS.map { weight ->
+        *weights.map { weight ->
             Font(regular, weight, variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)))
         }.toTypedArray(),
     )

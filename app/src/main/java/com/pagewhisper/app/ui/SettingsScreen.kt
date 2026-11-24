@@ -120,13 +120,14 @@ fun SettingsScreen(vm: AppViewModel) {
                 for ((key, label, icon) in AMBIENT) {
                     val on = s.amb == key
                     Column(
-                        Modifier.weight(1f).height(70.dp).clip(RoundedCornerShape(12.dp)).background(if (on) c.accent.copy(alpha = 0.22f) else c.panel2)
+                        Modifier.weight(1f).height(70.dp).clip(RoundedCornerShape(12.dp)).background(if (on) c.accent else c.panel2)
                             .border(1.dp, if (on) c.accent else c.line, RoundedCornerShape(12.dp))
                             .clickable { vm.update { it.copy(amb = key) }; if (key != "off") Playback.previewAmbient() else Playback.syncAmbient() },
                         verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        PwIcon(icon, tint = if (on) c.accent2 else c.text, size = 26.dp)
-                        Text(label, fontSize = 11.sp, color = if (on) c.accent2 else c.text, maxLines = 1)
+                        val contentColor = if (on) accentContentColor(c.accent) else c.text
+                        PwIcon(icon, tint = contentColor, size = 26.dp)
+                        Text(label, fontSize = 11.sp, color = contentColor, maxLines = 1)
                     }
                 }
             }
@@ -157,6 +158,7 @@ fun SettingsScreen(vm: AppViewModel) {
 
         PwCard("About") {
             Text("PageWhisper v${BuildConfig.VERSION_NAME}", fontSize = 13.sp, color = c.text)
+            Hint("Developed by Sir_JPagdi")
             Hint("Kokoro voices run on your phone through sherpa-onnx. No account, no server.")
         }
     }

@@ -34,7 +34,7 @@ here, and `FEATURES.md` is the spec for both.
 
 ## Fonts
 
-Serif, Sans and Mono are built in. Montserrat is used throughout the app UI; the reader's font remains independently selectable.
+Serif, Sans and Mono are built in. Medium-weight Montserrat is used throughout the app UI; the reader's font remains independently selectable.
 The following bundled reader fonts work offline; variable fonts include multiple weights:
 
 | Font | Bundled file(s) |

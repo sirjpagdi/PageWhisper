@@ -87,7 +87,8 @@ Out-of-range or unknown values are clamped or replaced by the default when loadi
 `accent` is `auto` (the theme's own accent, above), `purple`, `blue`, `teal`, `green`, `rose` or `orange`; `accentTone` is an
 integer from -35 to 35 (percentage points of HSL lightness added to the accent, hue and saturation kept; the result is kept
 between 12% and 88% lightness). The accent applies to buttons, the progress bar, selected chips and the nav bar, and is
-separate from the highlight colour. Colours (main / secondary) per theme group:
+separate from the highlight colour. Solid accent controls choose black or white foreground text by relative luminance.
+The app UI uses medium-weight Montserrat; the reader font remains independently selectable. Colours (main / secondary) per theme group:
 
 | Accent | Dark and AMOLED | Light | Sepia |
 |---|---|---|---|
