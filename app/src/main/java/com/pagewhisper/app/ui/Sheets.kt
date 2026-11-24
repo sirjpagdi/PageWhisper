@@ -117,19 +117,22 @@ private fun ReadingSheet(vm: AppViewModel) {
     val ctx = LocalContext.current
     val r by Repo.reading.collectAsStateWithLifecycle()
     fun upd(f: (ReadingStyle) -> ReadingStyle) = Repo.updateReading(f)
-    Column(Modifier.fillMaxHeight(0.9f).verticalScroll(rememberScrollState()).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(Modifier.fillMaxHeight(0.9f).padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         SheetHeader("Reading style", onDone = { vm.closeSheet() }, extra = { SoftButton("Reset", { upd { ReadingStyle() } }) })
-        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            val hl = highlightColor(r.hl)
-            Text(
-                buildAnnotatedString {
-                    append("The rain had been falling over the old harbor town for three days. ")
-                    withStyle(SpanStyle(background = hl.copy(alpha = 0.34f))) { append("Lanterns swayed above the narrow streets, and the smell of salt drifted up from the docks. ") }
-                    append("Mira pulled her coat tighter and stepped into the lamplight.")
-                },
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(c.bg).border(1.dp, c.line, RoundedCornerShape(12.dp)).padding(horizontal = (r.pad + 10).dp, vertical = 8.dp),
-                style = readingTextStyle(ctx, r, c.text), maxLines = 6, overflow = TextOverflow.Ellipsis,
-            )
+        val hl = highlightColor(r.hl)
+        Text(
+            buildAnnotatedString {
+                append("The rain had been falling over the old harbor town for three days. ")
+                withStyle(SpanStyle(background = hl.copy(alpha = 0.34f))) { append("Lanterns swayed above the narrow streets, and the smell of salt drifted up from the docks. ") }
+                append("Mira pulled her coat tighter and stepped into the lamplight.")
+            },
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(12.dp)).background(c.bg).border(1.dp, c.line, RoundedCornerShape(12.dp)).padding(horizontal = (r.pad + 10).dp, vertical = 8.dp),
+            style = readingTextStyle(ctx, r, c.text), maxLines = 6, overflow = TextOverflow.Ellipsis,
+        )
+        Column(
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
             Label("Theme"); ThemeSwatches(r.theme) { id -> upd { it.copy(theme = id) } }
             Label("Accent colour")
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
