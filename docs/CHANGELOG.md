@@ -1,5 +1,20 @@
 # Android changelog
 
+## 0.3.0 (patch, same version)
+- Readability: Sepia and Light text and secondary text are now close to black (Sepia and Light text now near black), with
+  firmer borders. Cause of the faint look: the bundled Montserrat file was a variable font whose default weight is Thin, so the whole
+  UI drew hairline-thin on some phones. It is replaced by static Regular, Medium, SemiBold and Bold files, and UI body text uses Medium.
+- Chapter narration: the page's headings are now searched for the real chapter heading ("Chapter 12 - Title") instead of trusting
+  the first `h1`, which is usually the novel's name. If the body already opens with its own chapter heading, that is read and the
+  novel title is skipped. The novel's own name is never spoken as the chapter title.
+- Cooler speech: 2 to 3 CPU threads instead of up to 6; a thermal watch (Android 10+) that drops to 2 threads and adds short rests
+  between sections when the phone reports a moderate or worse thermal state; the wake lock is released while paused; slower polling
+  while paused or with the screen off; a 2 second audio buffer for fewer wake-ups; the notification and saved position are no longer
+  rebuilt on every sleep-timer tick.
+- About card: more about the app, privacy, voice, reading and credits.
+- README: build and setup instructions removed.
+- The APK is no longer included in the source package, and files sit at the root of the zip.
+
 ## 0.3.0
 - Reading fonts: bundled the advertised font families for offline use and added EB Garamond, Crimson Pro, Source Serif 4, and Montserrat.
   Montserrat now styles the app UI at a heavier medium weight; reader font selection remains independent.

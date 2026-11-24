@@ -78,6 +78,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val history = ArrayList<ChapterState>()
     private var pos = -1
     private var lastSaved = 0L
+    private var lastSavedIndex = -1
 
     init {
         Playback.onChapterFinished = {
@@ -93,8 +94,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             Playback.ui.collect { u -> // remember where you are
                 val ch = chapter.value ?: return@collect
                 val now = System.currentTimeMillis()
-                if (now - lastSaved > 3000 || !u.playing) {
+                if (u.index != lastSavedIndex && (now - lastSaved > 3000 || !u.playing || u.paused)) {
                     lastSaved = now
+                    lastSavedIndex = u.index
                     Repo.saveLast(Repo.LastChapter(ch.title, ch.text, ch.url, ch.next, u.index))
                 }
             }
@@ -121,8 +123,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun novelKeyOf(url: String) = if (url.isEmpty()) "" else Extractor.novelKey(url)
 
+    /** The title to speak before the body: never the novel's own name, which says nothing about the chapter. */
+    private fun spokenTitle(ch: ChapterState): String {
+        val novel = Repo.novelFor(ch.url)?.title?.trim().orEmpty()
+        return if (novel.isNotEmpty() && ch.title.trim().equals(novel, ignoreCase = true) && !Extractor.looksLikeChapter(ch.title)) "" else ch.title
+    }
+
     private fun rebuild(ch: ChapterState) {
-        val secs = TextTools.buildSections(ch.text, Repo.settings.value.chunk, pronEngine, novelKeyOf(ch.url), ch.title)
+        val secs = TextTools.buildSections(ch.text, Repo.settings.value.chunk, pronEngine, novelKeyOf(ch.url), spokenTitle(ch))
         sections.value = secs
         Playback.setChapter(ch.title, Repo.novelFor(ch.url)?.title ?: "", secs)
     }
@@ -130,7 +138,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** A pronunciation change takes effect on sections that are not prepared yet. */
     private fun refreshSpeech() {
         val ch = chapter.value ?: return
-        val secs = TextTools.buildSections(ch.text, Repo.settings.value.chunk, pronEngine, novelKeyOf(ch.url), ch.title)
+        val secs = TextTools.buildSections(ch.text, Repo.settings.value.chunk, pronEngine, novelKeyOf(ch.url), spokenTitle(ch))
         sections.value = secs
         Playback.updateSections(secs)
     }

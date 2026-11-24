@@ -13,7 +13,7 @@ import java.util.concurrent.Executors
  * Kokoro through sherpa-onnx. If a parameter name below does not compile, Ctrl+click OfflineTts in the AAR
  * and match its current constructor (the same note as in the spike project).
  */
-class SherpaEngine(ctx: Context, threads: Int) {
+class SherpaEngine(ctx: Context, val threads: Int) {
     private val tts: OfflineTts
     val sampleRate: Int
 
@@ -47,13 +47,33 @@ object EngineHolder {
 
     @Volatile private var engine: SherpaEngine? = null
 
-    /** CPU threads used for speech. */
-    @Volatile var threads: Int = (Runtime.getRuntime().availableProcessors() - 2).coerceIn(2, 6)
+    /**
+     * CPU threads used for speech. Fewer threads on the efficient share of the cores keep the phone cooler: the audio
+     * is made well ahead of playback anyway (see Playback), so speed is not lost, only the heat spike. Half of the
+     * cores, at least 2 and at most 3.
+     */
+    @Volatile var threads: Int = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(2, 3)
+
+    /** Set by Playback when the phone reports it is getting hot; the engine then runs on the minimum of 2 threads. */
+    @Volatile var hot: Boolean = false
+
+    private fun wanted(): Int = if (hot) 2 else threads
+
+    @Volatile private var builtAt = 0L
 
     private fun ensure(ctx: Context): SherpaEngine {
-        engine?.let { return it }
+        val current = engine
+        if (current != null) {
+            val cooling = !hot && current.threads < threads && System.currentTimeMillis() - builtAt > 3 * 60_000L
+            val overheating = hot && current.threads > 2
+            if (!cooling && !overheating) return current
+            // A different thread count is only applied here, between two sections, on the speech thread. Reloading the
+            // model costs a few seconds, so going back up waits at least 3 minutes after the last reload.
+            current.release()
+            engine = null
+        }
         check(ModelStore.isReady(ctx)) { "MODEL_MISSING" }
-        return SherpaEngine(ctx.applicationContext, threads).also { engine = it }
+        return SherpaEngine(ctx.applicationContext, wanted()).also { engine = it; builtAt = System.currentTimeMillis() }
     }
 
     suspend fun get(ctx: Context): SherpaEngine = withContext(dispatcher) { ensure(ctx) }

@@ -34,11 +34,11 @@ private val darkBase = PwColors(
 fun pwColors(theme: String): PwColors = when (theme) {
     "amoled" -> darkBase.copy(bg = Color.Black, panel = Color(0xFF0B0B10), panel2 = Color(0xFF16161F), line = Color(0xFF25253A), text = Color(0xFFE8E8F0), muted = Color(0xFF9A99B0), input = Color.Black)
     "sepia" -> PwColors(
-        bg = Color(0xFFF4ECD8), panel = Color(0xFFEBE0C6), panel2 = Color(0xFFE2D5B5), line = Color(0xFFCDBD96), text = Color(0xFF2E2115), muted = Color(0xFF51412B),
+        bg = Color(0xFFF4ECD8), panel = Color(0xFFEBE0C6), panel2 = Color(0xFFE2D5B5), line = Color(0xFFB9A57A), text = Color(0xFF120B04), muted = Color(0xFF2E2314),
         accent = Color(0xFF9A5B2E), accent2 = Color(0xFF7A4A1B), input = Color(0xFFF8F1DF), red = Color(0xFFA14A3A), green = Color(0xFF4F7A4A), light = true,
     )
     "light" -> PwColors(
-        bg = Color(0xFFFAFAFA), panel = Color(0xFFFFFFFF), panel2 = Color(0xFFEEF0F4), line = Color(0xFFD8DBE3), text = Color(0xFF111116), muted = Color(0xFF3F414A),
+        bg = Color(0xFFFAFAFA), panel = Color(0xFFFFFFFF), panel2 = Color(0xFFEEF0F4), line = Color(0xFFC4C8D3), text = Color(0xFF050508), muted = Color(0xFF22242B),
         accent = Color(0xFF6D3FE0), accent2 = Color(0xFF5A2FC4), input = Color(0xFFF5F6F9), red = Color(0xFFB3392F), green = Color(0xFF2F7D4F), light = true,
     )
     else -> darkBase
@@ -154,9 +154,9 @@ private fun typographyWithFont(fontFamily: FontFamily): Typography {
         titleLarge = base.titleLarge.copy(fontFamily = fontFamily),
         titleMedium = base.titleMedium.copy(fontFamily = fontFamily),
         titleSmall = base.titleSmall.copy(fontFamily = fontFamily),
-        bodyLarge = base.bodyLarge.copy(fontFamily = fontFamily),
-        bodyMedium = base.bodyMedium.copy(fontFamily = fontFamily),
-        bodySmall = base.bodySmall.copy(fontFamily = fontFamily),
+        bodyLarge = base.bodyLarge.copy(fontFamily = fontFamily, fontWeight = FontWeight.Medium),
+        bodyMedium = base.bodyMedium.copy(fontFamily = fontFamily, fontWeight = FontWeight.Medium),
+        bodySmall = base.bodySmall.copy(fontFamily = fontFamily, fontWeight = FontWeight.Medium),
         labelLarge = base.labelLarge.copy(fontFamily = fontFamily),
         labelMedium = base.labelMedium.copy(fontFamily = fontFamily),
         labelSmall = base.labelSmall.copy(fontFamily = fontFamily),
@@ -164,11 +164,10 @@ private fun typographyWithFont(fontFamily: FontFamily): Typography {
 }
 
 private val VARIABLE_FONT_IDS = setOf(
-    "literata", "merriweather", "lora", "lexend", "ebgaramond", "crimsonpro", "sourceserif4", "montserrat",
+    "literata", "merriweather", "lora", "lexend", "ebgaramond", "crimsonpro", "sourceserif4",
 )
 
 private val VARIABLE_FONT_WEIGHTS = listOf(FontWeight.W400, FontWeight.W500, FontWeight.W600, FontWeight.W700)
-private val UI_FONT_WEIGHTS = listOf(FontWeight.W500, FontWeight.W600, FontWeight.W700)
 
 /**
  * Serif, Sans and Mono are built in. The other fonts are used if their files are in app/src/main/res/font
@@ -182,15 +181,32 @@ fun fontFamilyFor(ctx: Context, id: String): FontFamily {
         "serif" -> return FontFamily.Serif
     }
     val res = ctx.resources
+    if (id == "montserrat") return montserratFamily(ctx)
     val regular = res.getIdentifier("font_$id", "font", ctx.packageName)
     if (regular == 0) return if (id in listOf("atkinson", "lexend", "dyslexic", "montserrat")) FontFamily.SansSerif else FontFamily.Serif
     val bold = res.getIdentifier("font_${id}_bold", "font", ctx.packageName)
     if (bold != 0) return FontFamily(Font(regular, FontWeight.Normal), Font(bold, FontWeight.Bold))
     if (id !in VARIABLE_FONT_IDS) return FontFamily(Font(regular, FontWeight.Normal))
-    val weights = if (id == "montserrat") UI_FONT_WEIGHTS else VARIABLE_FONT_WEIGHTS
     return FontFamily(
-        *weights.map { weight ->
+        *VARIABLE_FONT_WEIGHTS.map { weight ->
             Font(regular, weight, variationSettings = FontVariation.Settings(FontVariation.weight(weight.weight)))
         }.toTypedArray(),
     )
+}
+
+/**
+ * Montserrat ships as separate static files (Regular, Medium, SemiBold, Bold). The original variable file started at the
+ * Thin weight, which made the whole UI look faint on some phones, so no variation settings are used for it.
+ */
+private fun montserratFamily(ctx: Context): FontFamily {
+    val res = ctx.resources
+    fun face(name: String, weight: FontWeight): Font? {
+        val id = res.getIdentifier("font_montserrat_$name", "font", ctx.packageName)
+        return if (id == 0) null else Font(id, weight)
+    }
+    val faces = listOfNotNull(
+        face("regular", FontWeight.Normal), face("medium", FontWeight.Medium),
+        face("semibold", FontWeight.SemiBold), face("bold", FontWeight.Bold),
+    )
+    return if (faces.isEmpty()) FontFamily.SansSerif else FontFamily(*faces.toTypedArray())
 }

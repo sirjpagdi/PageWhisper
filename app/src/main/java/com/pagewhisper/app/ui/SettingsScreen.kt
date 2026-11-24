@@ -97,7 +97,7 @@ fun SettingsScreen(vm: AppViewModel) {
             Segmented(listOf("160" to "Short", "280" to "Balanced", "380" to "Long"), s.chunk.toString()) { v ->
                 vm.update { it.copy(chunk = v.toInt()) }; vm.rebuildForChunkChange()
             }
-            Hint("Shorter chunks start sooner; longer chunks sound smoother.")
+            Hint("Shorter chunks start sooner; longer chunks sound smoother and keep the phone cooler.")
         }
 
         PwCard("Voice model") {
@@ -157,9 +157,27 @@ fun SettingsScreen(vm: AppViewModel) {
         }
 
         PwCard("About") {
-            Text("PageWhisper v${BuildConfig.VERSION_NAME}", fontSize = 13.sp, color = c.text)
+            Text("PageWhisper v${BuildConfig.VERSION_NAME}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = c.text)
+            Text("A web novel reader that speaks every chapter aloud, in natural voices that run on your phone.", fontSize = 13.sp, lineHeight = 19.sp, color = c.text)
             Hint("Developed by Sir_JPagdi")
-            Hint("Kokoro voices run on your phone through sherpa-onnx. No account, no server.")
+
+            Label("What it does")
+            Hint("Paste a chapter, share a link to the app, open a .txt file or read a page in the in-app browser. PageWhisper cleans the text, reads it aloud, highlights the sentence being spoken and keeps your place in every novel in your Library. Chapter lists, auto-next, a sleep timer with fade-out, ambient sounds and pronunciation rules are all built in.")
+
+            Label("Private by design")
+            Hint("No account, no ads, no tracking and no server of ours. Your library, saved chapters, pronunciation rules and settings stay on this phone. The only things that leave it are the chapter links you choose to fetch and the one-time voice model download.")
+
+            Label("Voice")
+            Hint("28 Kokoro voices, speech made on-device by sherpa-onnx. After the one-time voice model download, reading works fully offline. Speech is generated a little ahead of the audio and the phone gets short rests, so it stays cool and saves battery. Longer chunks run cooler than shorter ones.")
+
+            Label("Reading")
+            Hint("Four themes, thirteen reading fonts, adjustable size, spacing, alignment and highlight style. Each chapter is announced by its number and title before the text begins.")
+
+            Label("Credits")
+            Hint("Voices: Kokoro (Apache-2.0). Engine: sherpa-onnx (Apache-2.0) with espeak-ng phonemes (GPL-3). Fonts: Literata, Merriweather, Lora, Atkinson Hyperlegible, Lexend, OpenDyslexic, EB Garamond, Crimson Pro, Source Serif 4 and Montserrat, all under the SIL Open Font License.")
+
+            Label("Tips")
+            Hint("For listening with the screen off, set this app's battery usage to Unrestricted. Back up from this screen now and then; the same file also works in the web version.")
         }
     }
 }

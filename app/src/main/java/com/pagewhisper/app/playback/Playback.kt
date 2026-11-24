@@ -8,6 +8,7 @@ import android.media.AudioFocusRequest
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
@@ -103,7 +104,28 @@ object Playback {
     private var resumeOnGain = false
     private var sleepJob: Job? = null
 
-    fun init(application: Application) { app = application }
+    fun init(application: Application) {
+        app = application
+        registerThermal()
+    }
+
+    /**
+     * Heat watch (Android 10+). When the phone reports a moderate or worse thermal state, speech runs on fewer threads
+     * and takes short rests between sections. It switches back only when the phone is fully cool again.
+     */
+    @Volatile private var hot = false
+
+    private fun registerThermal() {
+        if (Build.VERSION.SDK_INT < 29) return
+        val pm = app.getSystemService(Context.POWER_SERVICE) as PowerManager
+        runCatching {
+            pm.addThermalStatusListener(ContextCompat.getMainExecutor(app)) { status ->
+                if (status >= PowerManager.THERMAL_STATUS_MODERATE) hot = true
+                else if (status == PowerManager.THERMAL_STATUS_NONE) hot = false
+                EngineHolder.hot = hot
+            }
+        }
+    }
 
     // ================= chapter =================
 
@@ -155,6 +177,7 @@ object Playback {
         val u = _ui.value
         if (!u.playing || u.paused) return
         runCatching { track?.pause() }
+        releaseWake() // a paused reader needs no wake lock; the phone can rest
         _ui.update { it.copy(paused = true, status = "Paused.") }
         syncAmbient()
     }
@@ -165,6 +188,7 @@ object Playback {
         sleeping = false
         setFade(1f)
         requestFocus()
+        acquireWake()
         runCatching { track?.play() }
         _ui.update { it.copy(paused = false, status = "Playing.") }
         syncAmbient()
@@ -219,7 +243,7 @@ object Playback {
         val sr = engine.sampleRate
         requestFocus()
         val minBuf = AudioTrack.getMinBufferSize(sr, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)
-        val t = newTrack(sr, max(minBuf, sr * 4)) // about 1 second of audio
+        val t = newTrack(sr, max(minBuf, sr * 8)) // about 2 seconds of audio: fewer wake-ups while the screen is off
         if (run != runId) { t.release(); return@coroutineScope }
         track = t
         t.setVolume(fade)
@@ -242,15 +266,19 @@ object Playback {
                     if (!isActive) break
                     // The first section starts at once; after that, wait until the audio in front of the speaker runs low.
                     if (i > start) {
-                        while (isActive && run == runId && (_ui.value.paused || bufferedSeconds() >= (if (appVisible) LOW_VISIBLE else LOW_HIDDEN))) delay(250)
+                        while (isActive && run == runId && (_ui.value.paused || bufferedSeconds() >= (if (appVisible) LOW_VISIBLE else LOW_HIDDEN))) delay(if (_ui.value.paused) 600 else 300)
                         if (!isActive || run != runId) break
                     }
                     val sec = sections.getOrNull(i) ?: break
                     val settings = Repo.settings.value
+                    val began = SystemClock.elapsedRealtime()
                     val pcm = if (sec.speech.isBlank()) FloatArray(0)
                     else EngineHolder.generate(app, sec.speech, Voices.sidOf(settings.voice), settings.rate.toFloat())
                     queued.addAndGet(pcm.size.toLong())
                     clips.send(Clip(i, pcm))
+                    // Duty cycle: while the phone is hot, rest for half as long as the section took to make, as long as
+                    // plenty of audio is still waiting in front of the speaker.
+                    if (hot && bufferedSeconds() > 12.0) delay((SystemClock.elapsedRealtime() - began) / 2)
                 }
             } finally {
                 clips.close()
@@ -266,7 +294,8 @@ object Playback {
                     for (b in boundaries) { if (b[0] <= head) idx = b[1].toInt() else break }
                 }
                 if (idx >= 0 && idx != _ui.value.index && run == runId) _ui.update { it.copy(index = idx) }
-                delay(80)
+                // The highlight only needs to be quick when it can be seen.
+                delay(if (_ui.value.paused) 500 else if (appVisible) 120 else 500)
             }
         }
 
@@ -370,7 +399,7 @@ object Playback {
     private fun acquireWake() {
         if (wake?.isHeld == true) return
         val pm = app.getSystemService(Context.POWER_SERVICE) as PowerManager
-        wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PageWhisper:playback").apply { acquire(12 * 60 * 60 * 1000L) }
+        wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PageWhisper:playback").apply { acquire(6 * 60 * 60 * 1000L) }
     }
 
     private fun releaseWake() {

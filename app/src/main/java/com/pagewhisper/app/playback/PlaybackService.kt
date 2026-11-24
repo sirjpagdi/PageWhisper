@@ -46,6 +46,7 @@ class PlaybackService : Service() {
     private lateinit var session: MediaSessionCompat
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var idleJob: Job? = null
+    private var lastKey = ""
 
     private val noisy = object : BroadcastReceiver() {
         override fun onReceive(c: Context, i: Intent) {
@@ -86,6 +87,11 @@ class PlaybackService : Service() {
     }
 
     private fun update(u: PlayerUi) {
+        // The sleep timer changes the state every second; the notification and media session only need to be rebuilt
+        // when something they show has changed.
+        val key = "${u.playing}|${u.paused}|${Playback.advancing}|${u.title}|${u.subtitle}|${if (u.subtitle.isEmpty()) u.status else ""}"
+        if (key == lastKey) return
+        lastKey = key
         val state = when {
             u.playing && !u.paused -> PlaybackStateCompat.STATE_PLAYING
             u.playing && u.paused -> PlaybackStateCompat.STATE_PAUSED

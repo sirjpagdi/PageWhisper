@@ -106,6 +106,18 @@ class SharedVectorsTest {
         assertEquals(title, sections.first().text)
     }
 
+    @Test fun chapterHeadingBeatsNovelTitle() {
+        assertEquals("Chapter 12 - The Return", Extractor.pickChapterTitle(listOf("Blue Moon", "Chapter 12 - The Return - Blue Moon"), "Blue Moon"))
+        assertEquals("Chapter 12: The Return", Extractor.pickChapterTitle(listOf("Blue Moon", "Chapter 12: The Return"), "Blue Moon"))
+        assertEquals("Blue Moon", Extractor.pickChapterTitle(listOf("Blue Moon", "Home"), "Blue Moon"))
+    }
+
+    @Test fun bodyChapterHeadingReplacesNovelTitle() {
+        val sections = TextTools.buildSections("Chapter 12: Rise\nOpening paragraph.", 280, null, "", "Blue Moon")
+        assertEquals(0, sections.first().para)
+        assertEquals("Chapter 12: Rise", sections.first().text)
+    }
+
     @Test fun sanitizePron() {
         val o = root["sanitizePron"]!!.jsonObject
         val got = BackupCore.pronFrom(o["input"]!!.jsonObject)

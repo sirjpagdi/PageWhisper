@@ -32,6 +32,31 @@ object Extractor {
         return parts.joinToString(" - ")
     }
 
+    private val CHAPTER_WORD = Regex("(?:^|[^\\p{L}])(?:chapter|chap\\.?|ch\\.?|episode|ep\\.?|vol(?:ume)?\\.?)\\s*\\d", RegexOption.IGNORE_CASE)
+    private val LEADING_NUMBER = Regex("^\\s*\\d{1,5}\\s*[-–—:.)]\\s*\\S")
+    private val TITLE_SEP = Regex("\\s+[-–—|]\\s+")
+
+    /** True for headings such as "Chapter 12: The Return", "Ch. 12 - Title" or "12. Title". */
+    fun looksLikeChapter(s: String): Boolean = CHAPTER_WORD.containsMatchIn(s) || LEADING_NUMBER.containsMatchIn(s)
+
+    /**
+     * Picks the chapter heading ("Chapter 12 - Title") out of the headings of a page. Pages usually carry the novel title
+     * in the first h1 and the chapter heading somewhere else, so the first heading is not trusted. [fallback] is used
+     * when no heading looks like a chapter.
+     */
+    fun pickChapterTitle(candidates: List<String>, fallback: String): String {
+        val cleaned = candidates.map { cleanTitle(it) }.filter { it.isNotBlank() && it.length <= 160 }
+        val others = cleaned.filterNot { looksLikeChapter(it) }
+        for (c in cleaned) {
+            if (!looksLikeChapter(c)) continue
+            val parts = c.split(TITLE_SEP)
+            val i = parts.indexOfFirst { looksLikeChapter(it) }.coerceAtLeast(0)
+            val tail = parts.drop(i).filterIndexed { k, part -> k == 0 || others.none { it.equals(part.trim(), ignoreCase = true) } }
+            return tail.joinToString(" - ")
+        }
+        return fallback
+    }
+
     fun hostOf(u: String): String = u.toHttpUrlOrNull()?.host?.removePrefix("www.") ?: ""
 
     private fun segments(u: String): List<String> =
@@ -74,7 +99,14 @@ object Extractor {
     fun fromHtml(html: String, url: String): Extracted {
         val doc = Jsoup.parse(html, url)
         val h1 = doc.selectFirst("h1")?.text().orEmpty()
-        val title = cleanTitle(if (h1.isNotBlank()) h1 else doc.title())
+        val fallbackTitle = cleanTitle(if (h1.isNotBlank()) h1 else doc.title())
+        val headings = ArrayList<String>()
+        for (e in doc.select(".chapter-title, .chr-title, .chapter__title, .chapter-name, [class*=chapter-title], [class*=chapter_title], [class*=chr-title], .entry-title, h1, h2, h3, h4").take(14)) {
+            e.text().replace(WS, " ").trim().takeIf { it.isNotEmpty() }?.let { headings.add(it) }
+        }
+        doc.selectFirst("meta[property=og:title]")?.attr("content")?.takeIf { it.isNotBlank() }?.let { headings.add(it) }
+        if (doc.title().isNotBlank()) headings.add(doc.title())
+        val title = pickChapterTitle(headings, fallbackTitle)
         val next = findNextInDoc(doc)
         val covers = coverFromDoc(doc)
         doc.select("script,style,noscript,nav,header,footer,aside,form,button,svg,iframe,.ads,.ad,.sidebar,.comments,#comments,[class*=advert]").remove()
@@ -156,7 +188,9 @@ object Extractor {
             .replace(Regex("(^|[\\s(])[*_]([^*_\\n]+)[*_](?=[\\s).,!?:;]|$)"), "$1$2")
             .replace("`", "")
         b = b.split("\n").filter { !NAV.matches(it.trim()) }.joinToString("\n")
-        val title = cleanTitle((h1 ?: t ?: hostOf(url)).trim())
+        val headings = Regex("^#{1,6}\\s+(.+)$", m).findAll(md).map { it.groupValues[1].trim() }.take(14).toMutableList()
+        t?.let { headings.add(it.trim()) }
+        val title = pickChapterTitle(headings, cleanTitle((h1 ?: t ?: hostOf(url)).trim()))
         return Extracted(title, TextTools.clean(b), next, covers)
     }
 

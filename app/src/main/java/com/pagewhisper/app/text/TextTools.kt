@@ -51,6 +51,12 @@ object TextTools {
         val title = chapterTitle?.replace(WS, " ")?.trim()
             ?.takeIf { it.isNotEmpty() && it.lowercase() !in setOf("untitled chapter", "imported text", "pasted chapter", "shared chapter") }
             ?.takeUnless { heading -> paras.firstOrNull()?.replace(WS, " ")?.equals(heading, ignoreCase = true) == true }
+            // The body already opens with its own chapter heading ("Chapter 12 ...") while the title is only the novel's
+            // name: speak the body's heading and skip the title, so the novel title is never read in place of the chapter.
+            ?.takeUnless { heading ->
+                val first = paras.firstOrNull()?.replace(WS, " ").orEmpty()
+                first.length <= 120 && Extractor.looksLikeChapter(first) && !Extractor.looksLikeChapter(heading)
+            }
         var idx = 0
         title?.let { heading ->
             for (piece in splitForSpeech(heading, max)) {

@@ -4,32 +4,16 @@ A native Android reader that speaks web novel chapters with Kokoro voices that r
 the app's own screens, no account, no server. It is the native version of the web app ("PageWhisper Lab", `index.html`): every feature there is
 here, and `FEATURES.md` is the spec for both.
 
-> **0.3.0:** bundled offline reading fonts, Montserrat UI typography, stronger light-theme contrast, accent-aware button text,
-> chapter-title narration, and reader scroll reset. See [the changelog](docs/CHANGELOG.md) for details.
->
-> **Status:** v0.2.0 has been built and installed. The v0.3.0 changes have not yet been built.
+> **0.3.0:** bundled offline reading fonts, Montserrat UI typography, much darker Light and Sepia text, chapter number and title
+> narration (the novel's name is never read in its place), a cooler-running voice engine, and a fuller About card.
+> See [the changelog](docs/CHANGELOG.md) for details.
 
-## Set up (about 20 minutes)
+## Getting started
 
-1. Install **Android Studio** (current stable) with JDK 17.
-2. Open the repository root as a project. If Studio offers to upgrade the Android Gradle Plugin or Kotlin, accept it.
-3. Put the **sherpa-onnx Android AAR** in `app/libs/` (see `app/libs/README.txt`). Get it from https://github.com/k2-fsa/sherpa-onnx/releases
-   (file named like `sherpa-onnx-1.x.y.aar`). *No AAR in a release?* Use the `sherpa-onnx-v1.x.y-android.tar.bz2` instead: copy its `jniLibs/`
-   to `app/src/main/` and the Kotlin files from the repo's `sherpa-onnx/kotlin-api/` into `app/src/main/java/com/k2fsa/sherpa/onnx/`.
-4. Sync Gradle, then run on a **real phone** (arm64). Emulators need the `abiFilters` line removed in `app/build.gradle.kts`.
-5. On first launch: allow notifications, then **Settings → Voice model → Download** (about 350 MB, use Wi-Fi). It is stored on the phone, and
-   reading works offline afterwards.
-6. Press play. For screen-off listening set the app's battery usage to **Unrestricted**.
-
-## First build: the places most likely to need a touch
-
-- `tts/TtsEngine.kt`: the sherpa-onnx Kotlin class and parameter names (`OfflineTtsKokoroModelConfig`, `lang`, `dictDir`...). Ctrl+click
-  `OfflineTts` in the AAR and match its current constructor. This is the same note as in the spike project.
-- `tts/Voices.kt`: the speaker number (`sid`) of each voice is assumed to be the alphabetical order of the voices (Heart = 3). If a voice sounds wrong,
-  check the order on the model's page at k2-fsa.github.io.
-- Compose API names move between versions (`ModalBottomSheet`, `FlowRow`, `LinearProgressIndicator(progress = { })`). The BOM in
-  `gradle/libs.versions.toml` is a version that has them; if you upgrade and something is renamed, the error will say where.
-- `ui/BrowserFetchScreen.kt`: `AndroidView(onRelease = ...)` needs a recent Compose UI.
+1. Install the app and open it. Allow notifications (they carry the lock-screen controls).
+2. Go to **Settings → Voice model → Download** (about 350 MB, use Wi-Fi). The model is stored on the phone and reading works offline afterwards.
+3. Open a chapter: paste text, share a link to PageWhisper, import a `.txt` file, or use **Read in browser** for sites with bot protection.
+4. Press play. For listening with the screen off, set the app's battery usage to **Unrestricted**.
 
 ## Fonts
 
@@ -47,7 +31,7 @@ The following bundled reader fonts work offline; variable fonts include multiple
 | EB Garamond | `font_ebgaramond.ttf` |
 | Crimson Pro | `font_crimsonpro.ttf` |
 | Source Serif 4 | `font_sourceserif4.ttf` |
-| Montserrat | `font_montserrat.ttf` |
+| Montserrat | `font_montserrat_regular.ttf`, `_medium`, `_semibold`, `_bold` (static weights) |
 
 All font licenses are included in `app/src/main/assets/font-licenses/`. The fonts add about 9.1 MB to the app.
 
@@ -92,34 +76,20 @@ Better on Android:
 Not the same: the "outline" highlight style is drawn as an underline with a light fill (Compose spans cannot draw a ring around text); chapter lists
 are not part of a backup (they are fetched again).
 
-## Tests
-
-`./gradlew testDebugUnitTest` runs `SharedVectorsTest`: pronunciation rules, sentence splitting, speech clean-up, titles, novel keys, next-link
-guessing, chapter numbers, chapter picking and backup merging, all against `shared-tests.json`. Keep that file identical to the web project's copy.
-
-### What was verified before you got this
-
-- The shared vectors pass in the web app (62 cases) and in a line-for-line Java port of the Kotlin regex logic (28 cases: pronunciation,
-  splitting, speech clean-up, titles). Kotlin's `Regex` is Java's, so this checks the part most likely to differ from JavaScript.
-- The random generator used by the ambient sounds produces identical numbers to the web version.
-- A cross-check of all source files: brackets balance, every call to another file's function exists, resources exist.
-- **Not** verified: compilation, the sherpa-onnx calls, the Compose screens on a device, playback, and the foreground service. Those are the first
-  things to try.
-
 ## Publishing on Google Play (later)
 
 - The voice engine bundles **espeak-ng (GPL-3)**. The simplest Play route is to publish the app's source under GPL-3; the other is replacing the
   phonemizer with a permissive one. This is not legal advice; decide before a public release.
 - Declare the foreground service type (media playback), fill in the data-safety form (nothing leaves the phone except the links you fetch and the
   one-time model download), and keep the app a neutral reader: it ships no list of novel sites; every link is the user's.
-- Set the target SDK to the current requirement and raise `versionCode` for each upload.
+- Keep the target SDK at the current Play requirement.
 
 ## Troubleshooting
 
 | Problem | Try |
 |---|---|
 | "The voice is not installed yet" | Settings → Voice model → Download |
-| Nothing plays, error mentions sherpa | check the AAR is in `app/libs` and the names in `TtsEngine.kt` |
-| A voice sounds like the wrong person | the `sid` order in `Voices.kt` |
+| Phone gets warm | pick **Balanced** or **Long** chunk size in Settings → Voice; speech already rests between sections and slows down on its own when the phone reports heat |
+| Chapter title missing or wrong | reopen the chapter from its link so the title is read again, or type a title when pasting |
 | Stops with the screen off | battery usage → Unrestricted; some phones also need "autostart" |
 | A site will not fetch | Open → Read in browser, or paste the text |
