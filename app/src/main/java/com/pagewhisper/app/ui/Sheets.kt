@@ -3,6 +3,7 @@ package com.pagewhisper.app.ui
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -220,13 +221,19 @@ private fun SleepSheet(vm: AppViewModel) {
 // ======================= brightness =======================
 @Composable
 private fun BrightSheet(vm: AppViewModel) {
-    val s by Repo.settings.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     Column(Modifier.padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SheetHeader("Brightness", onDone = { vm.closeSheet() })
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SliderRow("Screen brightness", s.brightness.toFloat(), 10f..100f, 89, "${s.brightness}%") { v -> vm.update { it.copy(brightness = v.toInt()) } }
-            Segmented(listOf("25" to "25%", "50" to "50%", "75" to "75%", "100" to "100%"), s.brightness.toString().takeIf { it in listOf("25", "50", "75", "100") } ?: "") { v -> vm.update { it.copy(brightness = v.toInt()) } }
-            Hint("Sets this app's real screen brightness while you are in fullscreen. Outside fullscreen your phone's own setting is used.")
+            PrimaryButton("Open display settings", {
+                vm.closeSheet()
+                try {
+                    context.startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS))
+                } catch (_: android.content.ActivityNotFoundException) {
+                    vm.toast("Display settings aren't available on this device.")
+                }
+            }, Modifier.fillMaxWidth())
+            Hint("Adjust your phone's system brightness there. PageWhisper follows the system setting and does not override it.")
         }
     }
 }

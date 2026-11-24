@@ -27,7 +27,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.background
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pagewhisper.app.text.Extractor
-import com.pagewhisper.app.text.TextTools
 import org.json.JSONObject
 import org.json.JSONTokener
 
@@ -83,7 +82,7 @@ private fun BrowserFetch(startUrl: String, onClose: () -> Unit, onError: (String
                     web?.evaluateJavascript(READ_SCRIPT) { raw ->
                         try {
                             val json = JSONObject(JSONTokener(raw).nextValue() as String)
-                            val body = TextTools.clean(json.optString("body"))
+                            val body = Extractor.cleanChapterBody(json.optString("body"))
                             if (body.length < 250) onError("Could not find the chapter text on this page. Scroll to the chapter and try again.")
                             else onRead(json.optString("title"), body, json.optString("next"), json.optString("url"))
                         } catch (e: Exception) { onError("Could not read this page: ${e.message}") }

@@ -128,6 +128,26 @@ class SharedVectorsTest {
         assertEquals("Blue Moon", Extractor.pickChapterTitle(listOf("Blue Moon", "Home"), "Blue Moon"))
     }
 
+    @Test fun cleanChapterBodyRemovesInjectedPageInstructions() {
+        val chapter = "A chapter paragraph with real story content. ".repeat(16)
+        val html = """
+            <html><title>Chapter 1</title><body><div id="chapter-content">
+            <p>$chapter</p>
+            <p>Use arrow keys (or A /D) to PREV/NEXT chapter</p>
+            <p>Please read these rules before posting.</p>
+            <p>By submitting a comment, you agree to follow them.</p>
+            <p>Site administrators and editors may moderate, edit, or remove comments.</p>
+            </div></body></html>
+        """.trimIndent()
+
+        val body = Extractor.fromHtml(html, "https://example.com/chapter-1").body
+
+        assertTrue(body.startsWith("A chapter paragraph"))
+        assertTrue(!body.contains("Use arrow keys"))
+        assertTrue(!body.contains("Please read these rules"))
+        assertTrue(!body.contains("moderate, edit, or remove comments"))
+    }
+
     @Test fun bodyChapterHeadingReplacesNovelTitle() {
         val sections = TextTools.buildSections("Chapter 12: Rise\nOpening paragraph.", 280, null, "", "Blue Moon")
         assertEquals(0, sections.first().para)

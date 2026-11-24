@@ -16,6 +16,14 @@ object Extractor {
     private val NAV = Regex("^$NAVSEP$NAVW(?:$NAVSEP$NAVW)*$NAVSEP$", RegexOption.IGNORE_CASE)
     private val BAD_IMG = Regex("(logo|favicon|icon|avatar|sprite|placeholder|loading|blank|pixel|banner|emoji|\\.svg|\\.gif)", RegexOption.IGNORE_CASE)
     private val WS = Regex("\\s+")
+    private val PAGE_CHROME_TAIL = Regex(
+        "(?is)(?:Use\\s+arrow\\s+keys\\s*\\(\\s*or\\s*A\\s*/\\s*D\\s*\\)\\s*to\\s*PREV\\s*/\\s*NEXT\\s*chapter|Please\\s+read\\s+these\\s+rules\\s+before\\s+posting\\s*\\.)[\\s\\S]*$",
+    )
+
+    fun cleanChapterBody(body: String): String {
+        val tailStart = PAGE_CHROME_TAIL.find(body)?.range?.first ?: body.length
+        return TextTools.clean(body.substring(0, tailStart))
+    }
 
     // ---------- titles and links (checked by shared-tests.json) ----------
 
@@ -127,13 +135,14 @@ object Extractor {
         }
         val root: Element = best ?: doc.body()
         val ps = root.select("p").map { it.text().replace(WS, " ").trim() }.filter { it.isNotEmpty() }
-        val body: String = if (ps.joinToString(" ").length >= 250) {
+        val extractedBody: String = if (ps.joinToString(" ").length >= 250) {
             ps.joinToString("\n\n")
         } else {
             for (br in root.select("br")) br.replaceWith(TextNode("\n"))
             for (b in root.select("div,li,h1,h2,h3,h4,h5,h6,section")) b.appendText("\n")
             TextTools.clean(root.wholeText())
         }
+        val body = cleanChapterBody(extractedBody)
         require(body.length >= 250) { "No chapter body found." }
         return Extracted(title, body, next, covers)
     }
@@ -191,7 +200,7 @@ object Extractor {
         val headings = Regex("^#{1,6}\\s+(.+)$", m).findAll(md).map { it.groupValues[1].trim() }.take(14).toMutableList()
         t?.let { headings.add(it.trim()) }
         val title = pickChapterTitle(headings, cleanTitle((h1 ?: t ?: hostOf(url)).trim()))
-        return Extracted(title, TextTools.clean(b), next, covers)
+        return Extracted(title, cleanChapterBody(b), next, covers)
     }
 
     // ---------- cover candidates ----------

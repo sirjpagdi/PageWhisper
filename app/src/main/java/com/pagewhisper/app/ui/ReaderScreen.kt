@@ -162,7 +162,7 @@ fun ReaderScreen(vm: AppViewModel, listState: LazyListState) {
             ToolBtn(Modifier.weight(1f), text = "Ch ›", enabled = ch != null, onClick = { vm.next() })
             ToolBtn(Modifier.weight(1f), text = "Auto", selected = settings.auto, onClick = { vm.update { it.copy(auto = !it.auto) }; vm.toast("Auto-play next chapter: " + if (!settings.auto) "on" else "off") })
             if (fs) {
-                ToolBtn(Modifier.weight(1f), icon = "sun", selected = settings.brightness < 100, onClick = { vm.openSheet(Sheet.Bright) })
+                ToolBtn(Modifier.weight(1f), icon = "sun", onClick = { vm.openSheet(Sheet.Bright) })
                 ToolBtn(Modifier.weight(1f), icon = "lock", onClick = { vm.lock() })
             }
             ToolBtn(Modifier.weight(1f), icon = if (fs) "close" else "fs", onClick = { if (fs) vm.exitFullscreen() else vm.enterFullscreen() })

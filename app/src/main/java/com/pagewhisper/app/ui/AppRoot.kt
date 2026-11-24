@@ -96,12 +96,6 @@ fun AppRoot(vm: AppViewModel) {
         } else ic.show(WindowInsetsCompat.Type.systemBars())
         onDispose { }
     }
-    // Real screen brightness (the web version can only dim). Back to the system level outside fullscreen.
-    LaunchedEffect(fs, settings.brightness) {
-        val lp = window.attributes
-        lp.screenBrightness = if (fs) settings.brightness / 100f else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
-        window.attributes = lp
-    }
     // Keep the screen on when asked, or while the touch lock is on.
     val keepOn = settings.awake || (locked && settings.lockAwake)
     LaunchedEffect(keepOn) {

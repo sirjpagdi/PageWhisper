@@ -33,7 +33,7 @@ Android column: **Written, not yet built** means the source is in the repository
 | **Sleep timer** (timed or end of chapter, with fade-out) | **Done** | Written, not yet built |
 | **Novel covers** (Library list only) | **Done** | Written, not yet built |
 | **Chapter lists** (full table of contents per novel) | **Done** | Written, not yet built |
-| **Brightness in fullscreen** | **Done** (software dimming) | Written, not yet built (real window brightness) |
+| **Brightness in fullscreen** | **Done** (software dimming) | Opens Android Display settings; follows system brightness |
 | **Keep screen on while locked** | **Done** | Written, not yet built |
 | **Flat SVG icons, no emoji** | **Done** | Written, not yet built (vector drawables) |
 | **Pronunciation fixes** (all novels or one novel) | **Done** | Written, not yet built |
@@ -263,15 +263,14 @@ Covers appear **only** in the Library's list of saved novels, never in the reade
 
 ## Spec: Brightness (fullscreen)
 
-A sun button appears in the fullscreen toolbar (before the lock button) and opens a brightness panel.
+A sun button appears in the fullscreen toolbar (before the lock button) and opens brightness controls.
 
-- **Range:** 10% to 100%, presets 25, 50, 75 and 100. Saved across restarts.
+- **Web:** range 10% to 100%, presets 25, 50, 75 and 100. Saved across restarts.
 - **Web:** a web page cannot change the phone's real brightness, so a black layer dims the screen. Opacity is
   `min(0.9, 1 - brightness)`, so the lowest setting never goes fully black. It only exists in fullscreen, lets touches through,
   and stays on top of the touch lock. While the panel is open the preview is capped at 0.55 so the panel stays readable.
 - It cannot make the screen brighter than the phone's own setting.
-- **Android:** set the real window brightness (`window.attributes.screenBrightness`, 0.1 to 1.0). This can be brighter
-  than the system level, needs no permission, and is restored to "system default" (-1) when fullscreen ends.
+- **Android:** the sun button opens the system Display settings. PageWhisper follows the system brightness and does not override it.
 
 ---
 
@@ -298,7 +297,8 @@ The screen is kept on when **either** applies:
 - If the browser drops the wake lock, the app gets it again within about a second.
 - If the browser refuses it, the fallback runs and the status says so.
 - A browser that keeps dropping it does not cause a request loop.
-- In fullscreen, the brightness button is visible and dimming works; outside fullscreen there is no dimming.
+- In fullscreen, the brightness button is visible; web dims the app, while Android opens system Display settings.
+- Outside fullscreen there is no app-level dimming.
 - Dimming also applies while locked, and survives a reload.
 
 
