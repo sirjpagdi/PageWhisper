@@ -47,7 +47,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
@@ -75,11 +74,29 @@ fun readingTextStyle(ctx: Context, r: ReadingStyle, color: Color): TextStyle = T
 
 fun sentenceHighlightStyle(style: String, color: Color, fontWeight: FontWeight?): SpanStyle {
     val highlight = when (style) {
-        "underline" -> SpanStyle(textDecoration = TextDecoration.Underline, background = color.copy(alpha = 0.12f))
+        "underline" -> SpanStyle(background = color.copy(alpha = 0.12f))
         "outline" -> SpanStyle(background = color.copy(alpha = 0.10f))
         else -> SpanStyle(background = color.copy(alpha = 0.34f))
     }
-    return highlight.copy(fontWeight = fontWeight)
+    return highlight.copy(fontWeight = if (style == "underline") FontWeight.Bold else fontWeight)
+}
+
+fun Modifier.underlineTextRange(layout: TextLayoutResult?, start: Int, end: Int, color: Color): Modifier = drawBehind {
+    val textLayout = layout ?: return@drawBehind
+    if (start < 0 || end > textLayout.layoutInput.text.length || start >= end) return@drawBehind
+    val lineBounds = HashMap<Int, Pair<Float, Float>>()
+    for (offset in start until end) {
+        val box = textLayout.getBoundingBox(offset)
+        val line = textLayout.getLineForOffset(offset)
+        val bounds = minOf(box.left, box.right) to maxOf(box.left, box.right)
+        val existing = lineBounds[line]
+        lineBounds[line] = if (existing == null) bounds else minOf(existing.first, bounds.first) to maxOf(existing.second, bounds.second)
+    }
+    val strokeWidth = 2.dp.toPx()
+    for ((line, bounds) in lineBounds) {
+        val y = textLayout.getLineBaseline(line) + strokeWidth
+        drawLine(color, Offset(bounds.first, y), Offset(bounds.second, y), strokeWidth)
+    }
 }
 
 fun Modifier.outlineTextRange(layout: TextLayoutResult?, start: Int, end: Int, color: Color): Modifier = drawBehind {
@@ -189,11 +206,13 @@ private fun Paragraph(group: List<Section>, active: Int, style: TextStyle, hl: C
     Text(
         annotated, style = style, onTextLayout = { layout = it },
         modifier = Modifier.fillMaxWidth().padding(bottom = spacing)
-            .then(if (hlStyle == "outline" && active >= 0) {
+            .then(if ((hlStyle == "outline" || hlStyle == "underline") && active >= 0) {
                 val sectionIndex = group.indexOfFirst { it.index == active }
                 val start = starts.getOrNull(sectionIndex) ?: -1
                 val section = group.getOrNull(sectionIndex)
-                Modifier.outlineTextRange(layout, start, start + (section?.text?.length ?: 0), hl)
+                val end = start + (section?.text?.length ?: 0)
+                if (hlStyle == "underline") Modifier.underlineTextRange(layout, start, end, hl)
+                else Modifier.outlineTextRange(layout, start, end, hl)
             } else Modifier)
             .pointerInput(group) {
             detectTapGestures { pos -> // tap a sentence to start from there

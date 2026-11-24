@@ -14,6 +14,7 @@
 - About card: more about the app, privacy, voice, reading and credits.
 - README: build and setup instructions removed.
 - The APK is no longer included in the source package, and files sit at the root of the zip.
+- Reading style: underline now uses the selected highlight color in both preview and reader, and the highlighted text is bolded.
 
 ## 0.3.0
 - Reading fonts: bundled the advertised font families for offline use and added EB Garamond, Crimson Pro, Source Serif 4, and Montserrat.

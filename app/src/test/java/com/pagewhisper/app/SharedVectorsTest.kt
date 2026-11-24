@@ -110,7 +110,7 @@ class SharedVectorsTest {
     @Test fun readingHighlightStyleReflectsEachChoiceAndTextWeight() {
         val color = Color(0xFF8B5CF6)
         val bold = sentenceHighlightStyle("underline", color, androidx.compose.ui.text.font.FontWeight.Bold)
-        assertEquals(androidx.compose.ui.text.style.TextDecoration.Underline, bold.textDecoration)
+        assertEquals(null, bold.textDecoration)
         assertEquals(androidx.compose.ui.text.font.FontWeight.Bold, bold.fontWeight)
         assertEquals(0.12f, bold.background.alpha, 0.001f)
 

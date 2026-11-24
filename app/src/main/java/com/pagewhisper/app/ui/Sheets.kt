@@ -134,7 +134,11 @@ private fun ReadingSheet(vm: AppViewModel) {
             },
             Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(12.dp)).background(c.bg).border(1.dp, c.line, RoundedCornerShape(12.dp))
                 .padding(horizontal = (r.pad + 10).dp, vertical = 8.dp)
-                .then(if (r.hlStyle == "outline") Modifier.outlineTextRange(previewLayout, previewText.indexOf(previewHighlight), previewText.indexOf(previewHighlight) + previewHighlight.length, hl) else Modifier),
+                .then(when (r.hlStyle) {
+                    "outline" -> Modifier.outlineTextRange(previewLayout, previewText.indexOf(previewHighlight), previewText.indexOf(previewHighlight) + previewHighlight.length, hl)
+                    "underline" -> Modifier.underlineTextRange(previewLayout, previewText.indexOf(previewHighlight), previewText.indexOf(previewHighlight) + previewHighlight.length, hl)
+                    else -> Modifier
+                }),
             style = readingTextStyle(ctx, r, c.text), maxLines = 6, overflow = TextOverflow.Ellipsis,
             onTextLayout = { previewLayout = it },
         )
