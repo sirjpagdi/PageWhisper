@@ -5,7 +5,7 @@ import org.jsoup.Jsoup
 
 data class ChapterItem(val num: Double?, val title: String, val url: String)
 
-/** Chapter lists (table of contents). Same rules as the web app; checked by shared-tests.json. */
+/** Chapter lists (table of contents). Checked by shared-tests.json. */
 object ChapterList {
     data class Link(val href: String, val text: String)
     data class PageLinks(val chapterLinks: List<Link>, val pageLinks: List<String>, val allLinks: List<String>)

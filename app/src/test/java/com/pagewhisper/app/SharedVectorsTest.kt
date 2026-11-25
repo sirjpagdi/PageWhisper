@@ -36,8 +36,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Runs every case in shared-tests.json. The web app passes the same file, so both apps behave identically.
- * (Copy of the file lives in src/test/resources; keep it in step with the one in the web project.)
+ * Runs every case in shared-tests.json (in src/test/resources): fixed inputs with the outputs the text tools must give.
  */
 class SharedVectorsTest {
     private val root: JsonObject = Json.parseToJsonElement(

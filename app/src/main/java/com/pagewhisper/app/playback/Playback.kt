@@ -64,11 +64,17 @@ data class PlayerUi(
  * A foreground service (PlaybackService) keeps it alive with the screen off.
  */
 object Playback {
-    // Speech is generated only when little audio is left in front of the speaker (same idea as the web app):
+    // Speech is generated only when little audio is left in front of the speaker:
     // it keeps the phone cooler and saves battery. With the screen off a bigger reserve is kept, because the
     // system may slow the app down. Seconds of audio.
     private const val LOW_VISIBLE = 15.0
     private const val LOW_HIDDEN = 35.0
+
+    /** Seconds of audio kept ready in front of the speaker. Cool mode keeps more, because it runs on slower cores. */
+    private fun reserveSeconds(): Double {
+        val cool = EngineHolder.currentMode() == "cool"
+        return if (appVisible) (if (cool) 20.0 else LOW_VISIBLE) else (if (cool) 45.0 else LOW_HIDDEN)
+    }
 
     /** True while one of the app's screens is on display; set by PageWhisperApp. */
     @Volatile var appVisible = true
@@ -106,6 +112,8 @@ object Playback {
 
     fun init(application: Application) {
         app = application
+        EngineHolder.modeProvider = { Repo.settings.value.heat }
+        EngineHolder.modelProvider = { Repo.settings.value.voiceModel }
         registerThermal()
     }
 
@@ -266,7 +274,7 @@ object Playback {
                     if (!isActive) break
                     // The first section starts at once; after that, wait until the audio in front of the speaker runs low.
                     if (i > start) {
-                        while (isActive && run == runId && (_ui.value.paused || bufferedSeconds() >= (if (appVisible) LOW_VISIBLE else LOW_HIDDEN))) delay(if (_ui.value.paused) 600 else 300)
+                        while (isActive && run == runId && (_ui.value.paused || bufferedSeconds() >= reserveSeconds())) delay(if (_ui.value.paused) 600 else 300)
                         if (!isActive || run != runId) break
                     }
                     val sec = sections.getOrNull(i) ?: break
@@ -287,7 +295,26 @@ object Playback {
 
         // Follows the speaker position so the highlighted sentence matches what is heard.
         val ticker = launch(Dispatchers.Default) {
+            var underruns = -1
+            var strikes = 0
+            var warm = false
             while (isActive) {
+                // If the speaker ran dry while speech was still being made, the voice cannot keep up with this heat
+                // setting: move one step towards a faster one for now. The thin start of a chapter (a short title
+                // clip, then the first long section) does not count; once some audio is in reserve one dry spell
+                // does, and before that three do.
+                if (producer.isActive && !_ui.value.paused && written.get() > 0) {
+                    val u = t.underrunCount
+                    if (underruns < 0) underruns = u
+                    if (!warm && bufferedSeconds() >= 8.0) { warm = true; underruns = u; strikes = 0 }
+                    if (u > underruns) {
+                        underruns = u; strikes++
+                        if (strikes >= (if (warm) 1 else 3)) {
+                            strikes = 0
+                            if (EngineHolder.escalate()) events.tryEmit("The voice could not keep up, so it moved to a faster setting for now.")
+                        }
+                    }
+                }
                 val head = t.playbackHeadPosition.toLong() and 0xFFFFFFFFL
                 var idx = -1
                 synchronized(boundaries) {

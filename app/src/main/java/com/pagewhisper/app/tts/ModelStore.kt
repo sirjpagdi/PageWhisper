@@ -16,43 +16,76 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.coroutines.coroutineContext
 
+/** One downloadable Kokoro voice model. Both bundles carry the same 53 voices in the same order. */
+class ModelBundle(val id: String, val url: String, val dirName: String, val modelFile: String, val title: String, val size: String)
+
 /**
- * Downloads and unpacks the Kokoro voice model into app-private storage (it is far too big to ship inside the app).
- * No resume yet. If a smaller int8 bundle is published on the same release page, point MODEL_URL and DIR_NAME at it.
+ * Downloads and unpacks the Kokoro voice models into app-private storage (they are far too big to ship inside the app).
+ * Standard is the full-precision model; Light is the official int8 build of the same model, about a third of the size.
+ * No resume yet.
  */
 object ModelStore {
-    const val MODEL_URL = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_0.tar.bz2"
-    const val DIR_NAME = "kokoro-multi-lang-v1_0"
+    private const val BASE = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/"
+    val STANDARD = ModelBundle("standard", BASE + "kokoro-multi-lang-v1_0.tar.bz2", "kokoro-multi-lang-v1_0", "model.onnx", "Standard", "about 350 MB")
+    val LIGHT = ModelBundle("light", BASE + "kokoro-int8-multi-lang-v1_0.tar.bz2", "kokoro-int8-multi-lang-v1_0", "model.int8.onnx", "Light (int8)", "about 130 MB")
+    val ALL = listOf(STANDARD, LIGHT)
 
-    fun dir(ctx: Context) = File(ctx.filesDir, DIR_NAME)
+    fun bundle(id: String): ModelBundle = if (id == LIGHT.id) LIGHT else STANDARD
 
-    fun isReady(ctx: Context): Boolean {
-        val d = dir(ctx)
-        return File(d, "model.onnx").exists() && File(d, "voices.bin").exists() && File(d, "tokens.txt").exists() &&
+    fun dir(ctx: Context, b: ModelBundle) = File(ctx.filesDir, b.dirName)
+
+    fun isReady(ctx: Context, b: ModelBundle): Boolean {
+        val d = dir(ctx, b)
+        return File(d, b.modelFile).exists() && File(d, "voices.bin").exists() && File(d, "tokens.txt").exists() &&
             File(d, "espeak-ng-data").isDirectory && File(d, ".complete").exists()
     }
 
-    suspend fun download(ctx: Context, onProgress: (done: Long, total: Long) -> Unit) = withContext(Dispatchers.IO) {
+    /** True if at least one model is installed. */
+    fun isReady(ctx: Context): Boolean = ALL.any { isReady(ctx, it) }
+
+    /** The model to speak with: the chosen one if it is installed, otherwise the other one, otherwise none. */
+    fun active(ctx: Context, chosenId: String): ModelBundle? {
+        val chosen = bundle(chosenId)
+        return if (isReady(ctx, chosen)) chosen else ALL.firstOrNull { isReady(ctx, it) }
+    }
+
+    fun delete(ctx: Context, b: ModelBundle) { dir(ctx, b).deleteRecursively() }
+
+    suspend fun download(ctx: Context, b: ModelBundle, onProgress: (done: Long, total: Long) -> Unit) = withContext(Dispatchers.IO) {
         val root = ctx.filesDir
-        val prefix = root.canonicalPath + File.separator
-        dir(ctx).deleteRecursively()
-        val conn = (URL(MODEL_URL).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 20_000; readTimeout = 60_000; instanceFollowRedirects = true
-        }
-        val counting = CountingInputStream(conn.inputStream, conn.contentLengthLong, onProgress)
-        TarArchiveInputStream(BZip2CompressorInputStream(BufferedInputStream(counting, 1 shl 16))).use { tar ->
-            while (true) {
-                coroutineContext.ensureActive()
-                val e = tar.nextEntry as? TarArchiveEntry ?: break
-                val out = File(root, e.name)
-                if (!out.canonicalPath.startsWith(prefix)) continue // path traversal guard
-                if (e.isDirectory) out.mkdirs() else {
-                    out.parentFile?.mkdirs()
-                    FileOutputStream(out).use { tar.copyTo(it) }
+        // Unpack into a staging folder first, so a model that is already installed survives a failed download.
+        val staging = File(root, "download-${b.id}.tmp")
+        staging.deleteRecursively()
+        staging.mkdirs()
+        try {
+            val prefix = staging.canonicalPath + File.separator
+            val conn = (URL(b.url).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 20_000; readTimeout = 60_000; instanceFollowRedirects = true
+            }
+            val counting = CountingInputStream(conn.inputStream, conn.contentLengthLong, onProgress)
+            TarArchiveInputStream(BZip2CompressorInputStream(BufferedInputStream(counting, 1 shl 16))).use { tar ->
+                while (true) {
+                    coroutineContext.ensureActive()
+                    val e = tar.nextEntry as? TarArchiveEntry ?: break
+                    val out = File(staging, e.name)
+                    if (!out.canonicalPath.startsWith(prefix)) continue // path traversal guard
+                    if (e.isDirectory) out.mkdirs() else {
+                        out.parentFile?.mkdirs()
+                        FileOutputStream(out).use { tar.copyTo(it) }
+                    }
                 }
             }
+            // The files sit in one top folder inside the archive (or directly in the staging folder).
+            val candidates = listOf(staging) + (staging.listFiles()?.filter { it.isDirectory } ?: emptyList())
+            val src = candidates.firstOrNull { File(it, b.modelFile).exists() }
+                ?: throw IllegalStateException("The download did not contain ${b.modelFile}.")
+            val target = dir(ctx, b)
+            target.deleteRecursively()
+            if (!src.renameTo(target)) src.copyRecursively(target, overwrite = true)
+            File(target, ".complete").writeText("ok")
+        } finally {
+            staging.deleteRecursively()
         }
-        File(dir(ctx), ".complete").writeText("ok")
     }
 }
 

@@ -3,7 +3,7 @@ package com.pagewhisper.app.text
 import com.pagewhisper.app.model.PronRule
 import com.pagewhisper.app.model.PronSet
 
-/** Pronunciation rules. Spec: FEATURES.md "Spec: Pronunciation rules". Identical behaviour to the web app. */
+/** Pronunciation rules. Spec: FEATURES.md "Spec: Pronunciation rules". */
 object Pron {
     const val MAX_PER_LIST = 300
     const val FROM_MAX = 60

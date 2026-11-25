@@ -199,7 +199,7 @@ object BackupCore {
         )
     }
 
-    // ---------- merge (pure; same result as the web app) ----------
+    // ---------- merge (pure) ----------
     fun merge(local: LocalData, b: CleanBackup): LocalData {
         val novels = local.novels.toMutableList()
         val covers = local.covers.toMutableMap()

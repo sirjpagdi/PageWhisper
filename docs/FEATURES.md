@@ -1,42 +1,33 @@
 # PageWhisper features and parity
 
-The HTML app is **PageWhisper Lab**: new features are built and tried here first.
-Once a feature feels right, it is ported to the native Android app using the spec below.
-
-## How we work
-
-1. Prototype in the Lab (`index.html`).
-2. Write or update the feature's spec in this file (names, ranges, defaults, behavior).
-3. Port to Android from the spec, and tick the Android column.
+This file is the spec of the Android app's features: names, ranges, defaults and behavior. Update it together with the feature.
 
 ## Status
 
-Android column: **Written, not yet built** means the source is in the repository root but has not been compiled or run on a phone yet.
-
-| Feature | Lab (web) | Android |
-|---|---|---|
-| Fetch a chapter by link (reader service, direct, proxy) | Done | Written, not yet built (OkHttp + Jsoup, no CORS limits) |
-| Paste, clipboard, import `.txt`, share-sheet input | Done | Written, not yet built |
-| Kokoro voices (28) and speed | Done | Written, not yet built (sherpa-onnx) |
-| Sentence highlight, tap a sentence to jump | Done | Written, not yet built |
-| Fullscreen reader | Done | Written, not yet built (immersive mode) |
-| **Touch lock in fullscreen** (hold to unlock) | **Done** | Written, not yet built |
-| Previous/next chapter, next link detection, auto-next | Done | Written, not yet built |
-| Novel library with moving bookmarks | Done | Written, not yet built |
-| Saved chapters | Done | Written, not yet built |
-| Ambient sounds (9, generated on device) | Done | Written, not yet built (port the generators) |
-| Keep screen on | Done | Written, not yet built (window flag) |
-| Background / screen-off playback | Best effort | Written, not yet built (foreground service) |
-| **Reading style** (fonts, spacing, alignment, themes) | **Done** | Written, not yet built |
-| Browser fetch for bot-protected sites | Not possible on web | Written, not yet built for v1 (WebView as a tool) |
-| **Backup and restore** (one JSON file) | **Done** | Written, not yet built |
-| **Sleep timer** (timed or end of chapter, with fade-out) | **Done** | Written, not yet built |
-| **Novel covers** (Library list only) | **Done** | Written, not yet built |
-| **Chapter lists** (full table of contents per novel) | **Done** | Written, not yet built |
-| **Brightness in fullscreen** | **Done** (software dimming) | System brightness slider stays in sync with Android controls |
-| **Keep screen on while locked** | **Done** | Written, not yet built |
-| **Flat SVG icons, no emoji** | **Done** | Written, not yet built (vector drawables) |
-| **Pronunciation fixes** (all novels or one novel) | **Done** | Written, not yet built |
+| Feature | Status |
+|---|---|
+| Fetch a chapter by link (reader service, direct, proxy) | Done (OkHttp + Jsoup) |
+| Paste, clipboard, import `.txt`, share-sheet input | Done |
+| Kokoro voices (28) and speed | Done (sherpa-onnx) |
+| Sentence highlight, tap a sentence to jump | Done |
+| Fullscreen reader | Done (immersive mode) |
+| **Touch lock in fullscreen** (hold to unlock) | Done |
+| Previous/next chapter, next link detection, auto-next | Done |
+| Novel library with moving bookmarks | Done |
+| Saved chapters | Done |
+| Ambient sounds (9, generated on device) | Done |
+| Keep screen on | Done (window flag) |
+| Background / screen-off playback | Done (foreground service) |
+| **Reading style** (fonts, spacing, alignment, themes) | Done |
+| Browser fetch for bot-protected sites | Done (WebView as a tool) |
+| **Backup and restore** (one JSON file) | Done |
+| **Sleep timer** (timed or end of chapter, with fade-out) | Done |
+| **Novel covers** (Library list only) | Done |
+| **Chapter lists** (full table of contents per novel) | Done |
+| **Brightness in fullscreen** | System brightness slider stays in sync with Android controls |
+| **Keep screen on while locked** | Done |
+| **Flat SVG icons, no emoji** | Done (vector drawables) |
+| **Pronunciation fixes** (all novels or one novel) | Done |
 
 ---
 
@@ -50,7 +41,7 @@ reader and are saved immediately. A **Reset** button restores the defaults.
 | Key | Meaning | Range / values | Default |
 |---|---|---|---|
 | `font` | Typeface | `serif`, `sans`, `mono`, `literata`, `merriweather`, `lora`, `atkinson`, `lexend`, `dyslexic` | `serif` |
-| `size` | Text size (px on web, sp on Android) | 14 to 34, step 1 | 19 |
+| `size` | Text size (sp) | 14 to 34, step 1 | 19 |
 | `line` | Line height multiplier | 1.3 to 2.4, step 0.05 | 1.8 |
 | `para` | Space after a paragraph, in em | 0.2 to 2.0, step 0.1 | 1.05 |
 | `pad` | Side margins (px / dp) | 0 to 40, step 2 | 4 |
@@ -67,22 +58,21 @@ Out-of-range or unknown values are clamped or replaced by the default when loadi
 ### Fonts
 
 - System fonts: Serif, Sans, Mono (no download).
-- Web fonts (Fontsource, loaded when first chosen, then cached for offline use): Literata, Merriweather, Lora,
+- Bundled fonts (work offline): Literata, Merriweather, Lora,
   Atkinson Hyperlegible, Lexend, OpenDyslexic. Regular and Bold, Latin plus Latin Extended (so pinyin tone marks render).
-- If a font cannot load (offline), a similar system font is used and the panel says so.
 - **Android:** bundle these as font resources (all are open-licensed: OFL, plus OpenDyslexic's own open license; check each
   license text before a Play release).
 
-### Themes (background and panel colors are shared; Android text colors are darker for readability)
+### Themes
 
-| Theme | Background | Text (web / Android) | Panel | Accent |
+| Theme | Background | Text | Panel | Accent |
 |---|---|---|---|---|
 | Dark | `#0e0e16` | `#ecebf5` | `#171722` | `#8b5cf6` |
 | AMOLED | `#000000` | `#e8e8f0` | `#0b0b10` | `#8b5cf6` |
-| Sepia | `#f4ecd8` | `#4a3b27` / `#2e2115` | `#ebe0c6` | `#9a5b2e` |
-| Light | `#fafafa` | `#1d1d27` / `#111116` | `#ffffff` | `#6d3fe0` |
+| Sepia | `#f4ecd8` | `#120b04` | `#ebe0c6` | `#9a5b2e` |
+| Light | `#fafafa` | `#050508` | `#ffffff` | `#6d3fe0` |
 
-Android muted text is `#51412b` in Sepia and `#3f414a` in Light.
+Muted text is `#2e2314` in Sepia and `#22242b` in Light.
 
 ### Accent colour and shade (reading style keys `accent`, `accentTone`)
 
@@ -141,7 +131,6 @@ Storage: one `DataStore` entry per key above. Backup JSON uses the same key name
 ### Acceptance checks
 
 - Dragging any slider changes the text immediately, without moving to another screen.
-- Choosing an unloaded web font shows "Loading…" then "ready"; offline shows the fallback message.
 - Themes recolor the whole app, and the system status bar color matches.
 - Reopening the app keeps every setting; Reset restores the table above.
 - The highlighted sentence stays readable in all four themes and all three highlight styles.
@@ -186,7 +175,7 @@ Stops accidental touches while reading or listening in the fullscreen view (pock
 |---|---|
 | Swallow touches | full-screen overlay using `pointerInput` that consumes every `PointerEvent` |
 | Hold to unlock | `detectTapGestures(onPress = ...)` with a 1.1 s timer; `CircularProgressIndicator` ring |
-| Block back button | `BackHandler(enabled = locked) { }` (stronger than on the web) |
+| Block back button | `BackHandler(enabled = locked) { }` |
 | Hide content from TalkBack | `Modifier.clearAndSetSemantics { }` on the content, or `semantics { invisibleToUser() }` |
 | Haptics | `LocalHapticFeedback` or `VibrationEffect` |
 | Keep playing | foreground service and MediaSession are unaffected |
@@ -265,12 +254,7 @@ Covers appear **only** in the Library's list of saved novels, never in the reade
 
 A sun button appears in the fullscreen toolbar (before the lock button) and opens brightness controls.
 
-- **Web:** range 10% to 100%, presets 25, 50, 75 and 100. Saved across restarts.
-- **Web:** a web page cannot change the phone's real brightness, so a black layer dims the screen. Opacity is
-  `min(0.9, 1 - brightness)`, so the lowest setting never goes fully black. It only exists in fullscreen, lets touches through,
-  and stays on top of the touch lock. While the panel is open the preview is capped at 0.55 so the panel stays readable.
-- It cannot make the screen brighter than the phone's own setting.
-- **Android:** the in-app slider changes system brightness, and changes made in Android's brightness controls are reflected in the app.
+- The in-app slider changes system brightness, and changes made in Android's brightness controls are reflected in the app.
   Android's "Modify system settings" access is required. Adjusting the slider switches adaptive brightness to manual mode.
 
 ---
@@ -282,12 +266,7 @@ The screen is kept on when **either** applies:
 1. "Keep screen on while the app is open" is on (Settings), or
 2. the touch lock is on and "Keep screen on while the screen is locked" is on (Settings, **on by default**).
 
-- **Web method:** the browser's Screen Wake Lock. It is requested again whenever the browser drops it (after the app
-  returns from the background, after a fullscreen change, or if it is released for any other reason), with at most 5
-  quick retries per 10 seconds and a re-check every 20 seconds.
-- **Fallback:** if the browser refuses or does not support it, a tiny silent looping video plays inside the app
-  (the long-used "NoSleep" method).
-- **Status:** Settings shows whether it is active, using the fallback, or refused (for example by battery saver).
+- **Status:** Settings shows whether it is active.
   The lock screen hint says "The screen stays on." only when it really is.
 - Unlocking, switching the setting off, or leaving the condition releases it immediately.
 - **Android:** `FLAG_KEEP_SCREEN_ON` on the window while the condition holds. It is reliable, so there is no fallback.
@@ -296,9 +275,7 @@ The screen is kept on when **either** applies:
 
 - Locking the screen starts keep-awake without touching the Settings toggle; unlocking releases it.
 - If the browser drops the wake lock, the app gets it again within about a second.
-- If the browser refuses it, the fallback runs and the status says so.
-- A browser that keeps dropping it does not cause a request loop.
-- In fullscreen, the brightness button is visible; web dims the app, while Android adjusts system brightness.
+- In fullscreen, the brightness button is visible and adjusts system brightness.
 - Outside fullscreen there is no app-level dimming.
 - Dimming also applies while locked, and survives a reload.
 
@@ -356,13 +333,13 @@ the text belongs to that link's novel.
 
 ## Spec: Backup and restore
 
-One JSON file holds everything and moves between the web app and the Android app.
+One JSON file holds everything the app owns.
 
 ### File (`schema` 1)
 
 ```json
 {
-  "app": "PageWhisper", "schema": 1, "appVersion": "0.12.0", "platform": "web", "exportedAt": "2026-11-17T10:00:00Z",
+  "app": "PageWhisper", "schema": 1, "appVersion": "0.12.0", "platform": "android", "exportedAt": "2026-11-17T10:00:00Z",
   "reading": { "font": "serif", "size": 19, "line": 1.8, "para": 1.05, "pad": 4, "ls": 0, "align": "left",
                "weight": 400, "hyph": false, "theme": "dark", "hl": "violet", "hlStyle": "fill" },
   "settings": { "voice": "af_heart", "engine": "auto", "rate": 1, "chunk": "280", "ambVol": 0.35,
@@ -377,7 +354,7 @@ One JSON file holds everything and moves between the web app and the Android app
 ```
 
 - Every section is optional. `cover` is a small JPEG data URL (or null). Android may store covers as files but exports them in this form.
-- `engine` is a web setting and is ignored by Android; Android-only settings are not written by the web app.
+- `engine` is an old setting that is ignored.
 - Dates in `updated` are milliseconds since 1970.
 
 ### Export
@@ -423,7 +400,7 @@ follow the real chapter order instead of guessing a link.
 
 - **Update chapter list** (per novel, in its Chapters sheet) and **Update all chapter lists** (Library) read the list from the
   novel's own page: the saved link without its chapter number (`novelPageUrl`).
-- Each page is read directly, then through a public proxy (web only), then through the reader service. The first that shows chapters is used.
+- Each page is read directly, then through the reader service. The first that shows chapters is used.
 - **Extra pages:** links found inside pagination areas (`.pagination`, `.pager`, `[class*=pagination]`, `[class*=paging]`,
   `rel=next`) are followed if they stay on the same site and under the novel's path (or are `page` links). If the first page gives fewer than 5 chapters, a
   link whose text is "chapter list", "all chapters", "table of contents", "view all" or "full list" is followed too.

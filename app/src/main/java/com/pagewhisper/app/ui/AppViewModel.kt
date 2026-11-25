@@ -46,7 +46,8 @@ sealed interface Sheet {
 
 data class ChapterState(val title: String, val url: String, val text: String, val next: String)
 data class Status(val text: String = "", val error: Boolean = false, val busy: Boolean = false)
-data class ModelUi(val ready: Boolean, val downloading: Boolean = false, val progress: Float = 0f, val error: String = "")
+/** Which voice models are installed, and which one is downloading (its id, or empty). */
+data class ModelUi(val standard: Boolean, val light: Boolean, val downloading: String = "", val progress: Float = 0f, val error: String = "")
 data class RestoreUi(val backup: CleanBackup, val summary: String)
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -66,7 +67,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val tocStatus = MutableStateFlow(Status())
     val pronStatus = MutableStateFlow(Status())
     val backupStatus = MutableStateFlow(Status())
-    val model = MutableStateFlow(ModelUi(ModelStore.isReady(app)))
+    val model = MutableStateFlow(ModelUi(ModelStore.isReady(app, ModelStore.STANDARD), ModelStore.isReady(app, ModelStore.LIGHT)))
     val restore = MutableStateFlow<RestoreUi?>(null)
     /** The address open in the in-app browser (used for sites that block automatic fetching), or null. */
     val browser = MutableStateFlow<String?>(null)
@@ -469,15 +470,29 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ================= voice model =================
 
-    fun downloadModel() {
-        if (model.value.downloading) return
+    private fun installed(error: String = "") =
+        ModelUi(ModelStore.isReady(ctx, ModelStore.STANDARD), ModelStore.isReady(ctx, ModelStore.LIGHT), error = error)
+
+    fun downloadModel(id: String) {
+        if (model.value.downloading.isNotEmpty()) return
+        val bundle = ModelStore.bundle(id)
         viewModelScope.launch {
-            model.value = ModelUi(false, true, 0f)
+            model.value = installed().copy(downloading = bundle.id)
             try {
-                ModelStore.download(ctx) { done, total -> model.value = ModelUi(false, true, if (total > 0) done.toFloat() / total else 0f) }
-                model.value = ModelUi(ModelStore.isReady(ctx))
-            } catch (e: Throwable) { model.value = ModelUi(false, false, 0f, e.message ?: "Download failed") }
+                ModelStore.download(ctx, bundle) { done, total ->
+                    model.value = installed().copy(downloading = bundle.id, progress = if (total > 0) done.toFloat() / total else 0f)
+                }
+                model.value = installed()
+            } catch (e: Throwable) { model.value = installed(e.message ?: "Download failed") }
         }
+    }
+
+    /** Frees the space of a model that is not the one being spoken with. */
+    fun deleteModel(id: String) {
+        val bundle = ModelStore.bundle(id)
+        if (model.value.downloading.isNotEmpty() || ModelStore.active(ctx, Repo.settings.value.voiceModel)?.id == bundle.id) return
+        ModelStore.delete(ctx, bundle)
+        model.value = installed()
     }
 
     // ================= saved chapters =================

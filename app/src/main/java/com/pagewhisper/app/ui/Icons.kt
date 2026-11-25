@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** Flat vector icons, drawn from the same path data as the web app. No emoji anywhere. */
+/** Flat vector icons. No emoji anywhere. */
 object PwIcons {
     private class P(val d: String, val fill: Boolean = false)
 

@@ -2,7 +2,7 @@ package com.pagewhisper.app.text
 
 import com.pagewhisper.app.model.Section
 
-/** Pure text helpers; shared-tests.json keeps the shared text behavior in sync with the web app. */
+/** Pure text helpers; shared-tests.json holds fixed cases for them. */
 object TextTools {
     private val NEWLINES3 = Regex("\\n{3,}")
     private val SPACE_BEFORE_NL = Regex("[ \\t]+\\n")

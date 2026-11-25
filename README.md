@@ -1,11 +1,11 @@
 # PageWhisper for Android
 
 A native Android reader that speaks web novel chapters with Kokoro voices that run **on your phone**. Kotlin and Jetpack Compose, no WebView in
-the app's own screens, no account, no server. It is the native version of the web app ("PageWhisper Lab", `index.html`): every feature there is
-here, and `FEATURES.md` is the spec for both.
+the app's own screens, no account, no server. `FEATURES.md` holds the spec of its features.
 
-> **0.4.0:** synchronized in-app and system brightness controls, cleaner chapter extraction, and reading-style fixes, alongside bundled fonts,
-> stronger text contrast, chapter title narration, and a cooler-running voice engine.
+> **0.5.0:** a Heat control setting (Fast, Balanced, Cool) with automatic fallback, a choice between the Standard and the Light (int8) voice
+> model, justified card descriptions, and the web version's references removed. Builds on 0.4.0's bundled fonts, stronger text contrast,
+> chapter title narration and brightness controls.
 > See [the changelog](docs/CHANGELOG.md) for details.
 
 ## Getting started
@@ -40,38 +40,33 @@ All font licenses are included in `app/src/main/assets/font-licenses/`. The font
 ```
 app/src/main/java/com/pagewhisper/app/
   PageWhisperApp.kt, MainActivity.kt        app start, share-sheet input
-  model/Models.kt                           data classes (same names and ranges as the web app)
+  model/Models.kt                           data classes
   text/   TextTools, Pronunciation, Extractor, ChapterList     pure logic, unit tested
   data/   Repo (library, covers, lists), JsonFile, BackupCore (pure), BackupIO
   net/    Fetcher (OkHttp), TocFetcher (chapter lists)
   tts/    ModelStore (download), TtsEngine (sherpa-onnx), Voices
   playback/ Playback (speech pipeline, highlight timing, sleep timer), PlaybackService (foreground + notification), Ambient (sound generators)
   ui/     AppViewModel, screens (Reader, Open, Library, Settings), Sheets, BrowserFetchScreen, Theme, Icons, Components
-app/src/test/   SharedVectorsTest.kt + shared-tests.json (the same cases the web app passes)
+app/src/test/   SharedVectorsTest.kt + shared-tests.json (fixed cases for the text tools)
 ```
 
 Choices worth knowing: the library is plain JSON files (no database); media controls use `MediaSessionCompat` (simple and stable; Media3 can come
 later); the model is downloaded, never bundled.
 
-## Features (all of the web version, plus what only Android can do)
+## Features
 
-Same as the web app: fetch by link, paste, clipboard, `.txt` import, share-sheet input; 28 Kokoro voices and speed; sentence highlight and tap
+Fetch by link, paste, clipboard, `.txt` import, share-sheet input; 28 Kokoro voices and speed; sentence highlight and tap
 to jump; fullscreen; previous/next chapter with auto-next; novel library with moving bookmarks; saved chapters; covers (Library list only);
 **chapter lists**; ambient sounds; sleep timer; touch lock with hold-to-unlock; reading style (fonts, spacing, alignment, four themes, highlight
-styles); pronunciation rules; one-file backup and restore (the same file works in both apps).
+styles); pronunciation rules; one-file backup and restore.
 
-Better on Android:
+What Android adds:
 
-| | Web | Android |
-|---|---|---|
-| Playing with the screen off | best effort | foreground service, notification and lock-screen controls, headset buttons |
-| Speech speed | one thread in the browser | several CPU threads |
-| Fetching | blocked by browser rules; needs proxies | direct; no proxies |
-| Sites with bot protection | not possible | **Read in browser**: pass the check yourself, then read the page |
-| Brightness | dims below the system level | in-app and system brightness controls stay in sync |
-| Keep screen on | wake lock with a fallback | `FLAG_KEEP_SCREEN_ON` |
-| Back button while locked | cannot be blocked | blocked |
-| Voice model | cached by the browser | stored once on the phone |
+- Playing with the screen off through a foreground service, a notification, lock-screen controls and headset buttons.
+- Several CPU threads for speech, with a heat control (Fast, Balanced, Cool) and a choice of voice model (Standard or Light int8).
+- Direct fetching, and **Read in browser** for sites with bot protection: pass the check yourself, then read the page.
+- In-app and system brightness controls that stay in sync; keep-screen-on with `FLAG_KEEP_SCREEN_ON`; the back button is blocked while locked.
+- Voice models stored once on the phone.
 
 Not the same: the "outline" highlight style is drawn as an underline with a light fill (Compose spans cannot draw a ring around text); chapter lists
 are not part of a backup (they are fetched again).

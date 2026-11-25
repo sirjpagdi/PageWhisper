@@ -19,7 +19,7 @@ import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import kotlin.math.pow
 
-/** The four themes. Colours are identical to the web app. */
+/** The four themes. */
 data class PwColors(
     val bg: Color, val panel: Color, val panel2: Color, val line: Color, val text: Color, val muted: Color,
     val accent: Color, val accent2: Color, val input: Color, val red: Color, val green: Color, val light: Boolean,
@@ -44,7 +44,7 @@ fun pwColors(theme: String): PwColors = when (theme) {
     else -> darkBase
 }
 
-/** Accent colours: [dark/amoled, light, sepia] x [main, secondary]. Same table as the web app (ACCENTS). */
+/** Accent colours: [dark/amoled, light, sepia] x [main, secondary]. */
 private class AccentSet(val dark: Pair<Color, Color>, val light: Pair<Color, Color>, val sepia: Pair<Color, Color>)
 
 private fun pair(a: Long, b: Long) = Color(a) to Color(b)
@@ -64,7 +64,7 @@ fun accentSwatch(id: String, theme: String): Color {
     return when (theme) { "sepia" -> set.sepia.first; "light" -> set.light.first; else -> set.dark.first }
 }
 
-/** Lightness shift in HSL (delta in percent points, -35..35), keeping hue and saturation. Same maths as shadeAccent() on the web. */
+/** Lightness shift in HSL (delta in percent points, -35..35), keeping hue and saturation. */
 fun shadeAccent(color: Color, delta: Int): Color {
     if (delta == 0) return color
     val r = color.red; val g = color.green; val b = color.blue

@@ -1,5 +1,5 @@
 {
- "_about": "Shared test vectors for the web app (index.html) and the Android app. Both must produce `expected` for every `input`. Generated from the web implementation and checked by hand.",
+ "_about": "Test vectors for the text tools: each `input` must produce `expected`.",
  "schema": 1,
  "pronunciation": [
   {

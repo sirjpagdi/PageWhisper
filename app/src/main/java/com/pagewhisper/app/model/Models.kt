@@ -38,7 +38,7 @@ data class SavedChapter(
     val next: String = "",
 )
 
-/** Reading style: same keys, ranges and defaults as the web app. */
+/** Reading style: keys, ranges and defaults are listed in FEATURES.md. */
 @Serializable
 data class ReadingStyle(
     val font: String = "serif",
@@ -97,6 +97,8 @@ data class AppSettings(
     val amb: String = "off",
     val brightness: Int = 100,
     val sleepLast: Int = 0,
+    val heat: String = "cool",
+    val voiceModel: String = "standard",
 ) {
     fun sanitized(): AppSettings = AppSettings(
         voice = voice,
@@ -107,9 +109,12 @@ data class AppSettings(
         amb = if (amb in AMBIENT_KEYS) amb else "off",
         brightness = brightness.coerceIn(10, 100),
         sleepLast = if (sleepLast in 1..600) sleepLast else 0,
+        heat = if (heat in HEAT_MODES) heat else "cool",
+        voiceModel = if (voiceModel in listOf("standard", "light")) voiceModel else "standard",
     )
 
     companion object {
+        val HEAT_MODES = listOf("fast", "balanced", "cool")
         val AMBIENT_KEYS = listOf("off", "rain", "heavy", "storm", "ocean", "insects", "forest", "wind", "fire", "brown")
     }
 }

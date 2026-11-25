@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.pagewhisper.app.BuildConfig
 import com.pagewhisper.app.data.Repo
 import com.pagewhisper.app.model.ReadingStyle
+import com.pagewhisper.app.tts.ModelStore
 import com.pagewhisper.app.playback.Playback
 import com.pagewhisper.app.tts.Voices
 import java.time.LocalDate
@@ -99,21 +100,33 @@ fun SettingsScreen(vm: AppViewModel) {
                 vm.update { it.copy(chunk = v.toInt()) }; vm.rebuildForChunkChange()
             }
             Hint("Shorter chunks start sooner; longer chunks sound smoother and keep the phone cooler.")
+            Label("Heat control")
+            Segmented(listOf("fast" to "Fast", "balanced" to "Balanced", "cool" to "Cool"), s.heat) { v -> vm.update { it.copy(heat = v) } }
+            Hint("Fast uses more of the processor and warms the phone. Cool keeps speech on the phone's efficient cores and keeps more audio ready, so it runs much cooler. If the voice cannot keep up, the app moves to a faster setting by itself until it is restarted. A change applies from the next section.")
         }
 
         PwCard("Voice model") {
+            Segmented(ModelStore.ALL.map { it.id to it.title }, s.voiceModel) { v -> vm.update { it.copy(voiceModel = v) } }
+            val chosen = ModelStore.bundle(s.voiceModel)
+            val other = ModelStore.ALL.first { it.id != chosen.id }
+            val ready = if (chosen.id == ModelStore.LIGHT.id) model.light else model.standard
+            val otherReady = if (other.id == ModelStore.LIGHT.id) model.light else model.standard
             when {
-                model.ready -> Text("Installed. Speech is made on this phone and works offline.", fontSize = 13.sp, color = c.green)
-                model.downloading -> {
+                model.downloading == chosen.id -> {
                     LinearProgressIndicator(progress = { model.progress }, Modifier.fillMaxWidth(), color = c.accent, trackColor = c.line)
                     Text("Downloading… ${(model.progress * 100).toInt()}% (keep the app open)", fontSize = 12.sp, color = c.muted)
                 }
+                ready -> {
+                    Text("Installed. Speech is made on this phone and works offline.", fontSize = 13.sp, color = c.green)
+                    if (otherReady) SoftButton("Remove the ${other.title} model to free space", { vm.deleteModel(other.id) }, Modifier.fillMaxWidth(), enabled = model.downloading.isEmpty())
+                }
                 else -> {
-                    PrimaryButton("Download the voice model (about 350 MB)", { vm.downloadModel() }, Modifier.fillMaxWidth())
+                    PrimaryButton("Download the ${chosen.title} model (${chosen.size})", { vm.downloadModel(chosen.id) }, Modifier.fillMaxWidth(), enabled = model.downloading.isEmpty())
                     StatusText(model.error, true)
-                    Hint("Needed once. Use Wi-Fi. It is stored on this phone, so reading works offline afterwards.")
+                    if (otherReady) Hint("Until it is installed, the ${other.title} model is used.")
                 }
             }
+            Hint("Standard is the original full-precision voice. Light is the 8-bit (int8) build of the same voice: about a third of the size and lighter on memory, so it should run cooler, with almost the same sound. Both work offline, and a switch applies from the next section. Needed once; use Wi-Fi.")
         }
 
         PwCard("Ambient sound") {
@@ -151,7 +164,7 @@ fun SettingsScreen(vm: AppViewModel) {
         }
 
         PwCard("Backup & restore") {
-            Hint("Your library, covers, saved chapters, pronunciation rules and settings live on this phone. Back them up now and then. The file also works in the web version of PageWhisper.")
+            Hint("Your library, covers, saved chapters, pronunciation rules and settings live on this phone. Back them up now and then.")
             PrimaryButton("Back up everything", { export.launch("pagewhisper-backup-${LocalDate.now()}.json") }, Modifier.fillMaxWidth())
             SoftButton("Restore from a backup file", { import.launch(arrayOf("application/json", "text/plain", "*/*")) }, Modifier.fillMaxWidth())
             StatusText(backup.text, backup.error)
@@ -169,7 +182,7 @@ fun SettingsScreen(vm: AppViewModel) {
             Hint("No account, no ads, no tracking and no server of ours. Your library, saved chapters, pronunciation rules and settings stay on this phone. The only things that leave it are the chapter links you choose to fetch and the one-time voice model download.")
 
             Label("Voice")
-            Hint("28 Kokoro voices, speech made on-device by sherpa-onnx. After the one-time voice model download, reading works fully offline. Speech is generated a little ahead of the audio and the phone gets short rests, so it stays cool and saves battery. Longer chunks run cooler than shorter ones.")
+            Hint("28 Kokoro voices, speech made on-device by sherpa-onnx. After the one-time voice model download, reading works fully offline. Speech is generated a little ahead of the audio, on as few and as efficient processor cores as it can keep up with, and slows down by itself if the phone reports heat. Cool is the default heat setting; longer chunks run cooler than shorter ones.")
 
             Label("Reading")
             Hint("Four themes, thirteen reading fonts, adjustable size, spacing, alignment and highlight style. Each chapter is announced by its number and title before the text begins.")
@@ -178,7 +191,7 @@ fun SettingsScreen(vm: AppViewModel) {
             Hint("Voices: Kokoro (Apache-2.0). Engine: sherpa-onnx (Apache-2.0) with espeak-ng phonemes (GPL-3). Fonts: Literata, Merriweather, Lora, Atkinson Hyperlegible, Lexend, OpenDyslexic, EB Garamond, Crimson Pro, Source Serif 4 and Montserrat, all under the SIL Open Font License.")
 
             Label("Tips")
-            Hint("For listening with the screen off, set this app's battery usage to Unrestricted. Back up from this screen now and then; the same file also works in the web version.")
+            Hint("For listening with the screen off, set this app's battery usage to Unrestricted. Back up from this screen now and then.")
         }
     }
 }

@@ -6,7 +6,7 @@ import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.TextNode
 
-/** Chapter text, titles, links and cover candidates from web pages. Ported from the web app; keep them in step. */
+/** Chapter text, titles, links and cover candidates from web pages. */
 object Extractor {
     data class Extracted(val title: String, val body: String, val next: String, val covers: List<String>)
 

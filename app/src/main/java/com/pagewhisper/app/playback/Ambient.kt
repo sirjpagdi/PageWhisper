@@ -19,8 +19,7 @@ import kotlin.math.sqrt
 import kotlin.math.tanh
 
 /**
- * Ambient sounds made on the device (nothing to download). Ported from the web app's generators:
- * filtered noise plus event layers, rendered to a seamless 30 second loop.
+ * Ambient sounds made on the device (nothing to download). Filtered noise plus event layers, rendered to a seamless 30 second loop.
  */
 object AmbientDsp {
     const val SR = 22050
@@ -28,7 +27,7 @@ object AmbientDsp {
     private const val N = SR * SEC
     private const val TAU = 2.0 * PI
 
-    /** mulberry32, the same random generator as the web app. */
+    /** mulberry32, a small seeded random generator. */
     private class Rng(seed: Int) {
         private var a = seed
         fun next(): Double {

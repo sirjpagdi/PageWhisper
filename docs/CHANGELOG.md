@@ -1,5 +1,18 @@
 # Android changelog
 
+## 0.5.0
+- Heat control setting (Settings → Voice): Fast, Balanced or Cool, Cool being the default. Cool keeps the voice engine's threads on
+  the phone's efficient cores with a larger audio reserve. If the speaker runs dry, the app steps itself towards a faster setting
+  and says so, so reading never stays broken. The setting is not part of backups.
+- Voice model choice (Settings → Voice model): Standard (full precision, about 350 MB) or Light (the official int8 build of the same
+  model, about 130 MB, lighter on memory and cooler). Each downloads on its own into a staging folder, so an installed model survives
+  a failed download. A switch applies from the next section; if the chosen model is not installed, the other one is used. An unused
+  model can be removed from the same card.
+- The web version ("PageWhisper Lab") is retired; references to it are removed from the app text, code comments and docs.
+- Card descriptions on the Open, Library, Settings and About screens are justified.
+- Stale files removed from the package: the old Thin-weight variable Montserrat font and the APK.
+- versionCode 5, versionName 0.5.0.
+
 ## 0.4.0
 - Readability: Sepia and Light text and secondary text are now close to black (Sepia and Light text now near black), with
   firmer borders. Cause of the faint look: the bundled Montserrat file was a variable font whose default weight is Thin, so the whole
@@ -32,7 +45,7 @@
   start the audio track before streaming generated samples, preventing long writes from stalling silently.
 - versionCode 3, versionName 0.3.0.
 
-## 0.2.0 (synced with PageWhisper Lab 0.13.3)
+## 0.2.0
 - Reading style: accent colour (Theme default, purple, blue, teal, green, rose, orange) and accent shade slider (-35..35).
   Stored in `ReadingStyle.accent` / `accentTone`; read from and written to the shared backup file.
 - Speech buffering: generates the next section only when under 15 s of audio is queued (35 s with the screen off),
