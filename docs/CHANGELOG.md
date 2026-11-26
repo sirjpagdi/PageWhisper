@@ -1,5 +1,21 @@
 # Android changelog
 
+## 0.6.0
+- **EPUB and PDF books.** Open → Import a book, or "Open with PageWhisper" from a file manager. The book is added to the Library with its
+  cover and chapters and read aloud like any novel: Continue, the Chapters sheet, previous/next, auto-next, highlight, pronunciation rules
+  and the sleep timer all work. Books work offline.
+- EPUB: chapters and titles from the table of contents (EPUB 3 nav or NCX), files split at anchors, footnote marks and page breaks skipped,
+  cover included. DRM-protected books are refused with a clear message.
+- PDF: text rebuilt from the pages (paragraphs joined, hyphenated words rejoined, page numbers and running headers dropped); chapters from the
+  PDF's bookmarks, else from "Chapter 3"-style headings, else from blocks of 10 pages; the first page becomes the cover. Scanned PDFs (no text)
+  and password-protected PDFs are refused. New dependency: PDFBox for Android (Apache-2.0).
+- Books stay on the phone and are not part of backups; "Replace everything" on restore removes them, "Merge" keeps them.
+- Library: a book shows its kind and author, and hides the web-only buttons (Open in browser, Edit link, Update chapter list, Build by number).
+- Unit tests for the EPUB reader and the PDF text rules (`BooksTest`).
+- The Light (int8) voice model option is removed: it sounded off. Its files and half-finished downloads are deleted the first time the app
+  starts, and Settings → Voice model is back to the single full-precision model. The safer download (unpacked in a staging folder first) stays.
+- versionCode 6, versionName 0.6.0.
+
 ## 0.5.0
 - Heat control setting (Settings → Voice): Fast, Balanced or Cool, Cool being the default. Cool keeps the voice engine's threads on
   the phone's efficient cores with a larger audio reserve. If the speaker runs dry, the app steps itself towards a faster setting

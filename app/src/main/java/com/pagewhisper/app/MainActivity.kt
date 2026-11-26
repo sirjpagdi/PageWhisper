@@ -31,8 +31,13 @@ class MainActivity : ComponentActivity() {
         handle(intent)
     }
 
-    /** "Share to PageWhisper" from the browser: a chapter link, or selected chapter text. */
+    /** "Share to PageWhisper" from the browser (a chapter link or selected text), or "Open with" for a book file. */
     private fun handle(i: Intent?) {
         if (i?.action == Intent.ACTION_SEND) i.getStringExtra(Intent.EXTRA_TEXT)?.let { vm.handleShare(it) }
+        // "Open with PageWhisper" on an EPUB or PDF in a file manager or another app.
+        if (i?.action == Intent.ACTION_VIEW) i.data?.let { uri ->
+            vm.importBook(uri)
+            setIntent(Intent(Intent.ACTION_MAIN)) // so a restart of the screen does not import it again
+        }
     }
 }

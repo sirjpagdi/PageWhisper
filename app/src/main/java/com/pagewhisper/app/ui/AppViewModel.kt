@@ -2,9 +2,13 @@ package com.pagewhisper.app.ui
 
 import android.app.Application
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pagewhisper.app.data.BackupCore
+import com.pagewhisper.app.data.BookChapter
+import com.pagewhisper.app.data.BookMeta
+import com.pagewhisper.app.data.Books
 import com.pagewhisper.app.data.BackupException
 import com.pagewhisper.app.data.BackupIO
 import com.pagewhisper.app.data.CleanBackup
@@ -18,8 +22,11 @@ import com.pagewhisper.app.model.Section
 import com.pagewhisper.app.net.Fetcher
 import com.pagewhisper.app.net.TocFetcher
 import com.pagewhisper.app.playback.Playback
+import com.pagewhisper.app.text.ChapterItem
 import com.pagewhisper.app.text.ChapterList
+import com.pagewhisper.app.text.EpubReader
 import com.pagewhisper.app.text.Extractor
+import com.pagewhisper.app.text.PdfReader
 import com.pagewhisper.app.text.PronEngine
 import com.pagewhisper.app.text.TextTools
 import com.pagewhisper.app.tts.ModelStore
@@ -31,6 +38,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 enum class Tab { READ, OPEN, LIBRARY, SETTINGS }
 
@@ -46,8 +54,7 @@ sealed interface Sheet {
 
 data class ChapterState(val title: String, val url: String, val text: String, val next: String)
 data class Status(val text: String = "", val error: Boolean = false, val busy: Boolean = false)
-/** Which voice models are installed, and which one is downloading (its id, or empty). */
-data class ModelUi(val standard: Boolean, val light: Boolean, val downloading: String = "", val progress: Float = 0f, val error: String = "")
+data class ModelUi(val ready: Boolean, val downloading: Boolean = false, val progress: Float = 0f, val error: String = "")
 data class RestoreUi(val backup: CleanBackup, val summary: String)
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -62,12 +69,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val sections = MutableStateFlow<List<Section>>(emptyList())
     val nextUrl = MutableStateFlow("")
     val fetchUi = MutableStateFlow(Status())
+    val bookUi = MutableStateFlow(Status())
     val libraryStatus = MutableStateFlow(Status())
     val coverStatus = MutableStateFlow(Status())
     val tocStatus = MutableStateFlow(Status())
     val pronStatus = MutableStateFlow(Status())
     val backupStatus = MutableStateFlow(Status())
-    val model = MutableStateFlow(ModelUi(ModelStore.isReady(app, ModelStore.STANDARD), ModelStore.isReady(app, ModelStore.LIGHT)))
+    val model = MutableStateFlow(ModelUi(ModelStore.isReady(app)))
     val restore = MutableStateFlow<RestoreUi?>(null)
     /** The address open in the in-app browser (used for sites that block automatic fetching), or null. */
     val browser = MutableStateFlow<String?>(null)
@@ -90,6 +98,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         Playback.onSkipPastEnd = { viewModelScope.launch { goNext(true) } }
         viewModelScope.launch { Playback.events.collect { _toasts.emit(it) } }
         viewModelScope.launch { Repo.pron.collect { pronEngine = PronEngine(it); refreshSpeech() } }
+        viewModelScope.launch(Dispatchers.IO) { ModelStore.removeLegacy(ctx) }
         viewModelScope.launch { Repo.settings.collect { Playback.syncAmbient() } }
         viewModelScope.launch {
             Playback.ui.collect { u -> // remember where you are
@@ -197,6 +206,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun fetchChapterAwait(url: String, autoplay: Boolean = false): Boolean {
         val u = url.trim()
+        if (Books.isBookUrl(u)) return openBookChapter(u, autoplay)
         if (!(u.startsWith("http://") || u.startsWith("https://"))) { fetchUi.set("Enter a valid link starting with https://", error = true); return false }
         fetchUi.set("Fetching…", busy = true)
         val r = Fetcher.chapter(u)
@@ -214,6 +224,88 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun fetchChapter(url: String, autoplay: Boolean = false) { viewModelScope.launch { fetchChapterAwait(url, autoplay) } }
+
+    // ---------- imported books (EPUB and PDF) ----------
+
+    private suspend fun openBookChapter(url: String, autoplay: Boolean): Boolean {
+        val data = withContext(Dispatchers.IO) { Books.chapter(url) }
+        if (data == null) {
+            fetchUi.set("This book's file is missing. Import it again.", error = true)
+            toast("Could not open that chapter.")
+            return false
+        }
+        loadChapter(data.title, data.text, url, tocNeighbor(url, 1))
+        fetchUi.set("")
+        if (autoplay) Playback.play(0)
+        return true
+    }
+
+    private fun displayName(uri: Uri): String {
+        val fromProvider = try {
+            ctx.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+        } catch (_: Exception) { null }
+        return fromProvider ?: (uri.lastPathSegment?.substringAfterLast('/') ?: "")
+    }
+
+    /** Copies the picked file to a temporary file and tells what it is: "pdf" or "epub". */
+    private fun copyForImport(uri: Uri, tmp: File): String {
+        val input = ctx.contentResolver.openInputStream(uri) ?: throw IllegalStateException("Could not open that file.")
+        input.use { ins ->
+            tmp.outputStream().use { out ->
+                val buf = ByteArray(1 shl 16)
+                var total = 0L
+                while (true) {
+                    val n = ins.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                    total += n
+                    if (total > 400_000_000L) throw IllegalStateException("That file is too large (over 400 MB).")
+                }
+            }
+        }
+        val head = ByteArray(5)
+        val got = tmp.inputStream().use { it.read(head) }
+        val pdf = got >= 4 && head[0] == '%'.code.toByte() && head[1] == 'P'.code.toByte() && head[2] == 'D'.code.toByte() && head[3] == 'F'.code.toByte()
+        val zip = got >= 2 && head[0] == 'P'.code.toByte() && head[1] == 'K'.code.toByte()
+        return if (pdf) "pdf" else if (zip) "epub" else throw IllegalStateException("That file is not an EPUB or a PDF.")
+    }
+
+    /** Imports an EPUB or PDF into the library as a book, then opens its first chapter. */
+    fun importBook(uri: Uri) {
+        if (bookUi.value.busy) return
+        viewModelScope.launch {
+            bookUi.set("Opening the file…", busy = true)
+            val tmp = File(ctx.cacheDir, "import-" + Repo.newId() + ".tmp")
+            try {
+                val name = withContext(Dispatchers.IO) { displayName(uri) }
+                val kind = withContext(Dispatchers.IO) { copyForImport(uri, tmp) }
+                val base = name.substringBeforeLast('.').replace(Regex("[_]+"), " ").trim().ifEmpty { "Book" }
+                bookUi.set("Reading the book…", busy = true)
+                val book = withContext(Dispatchers.IO) {
+                    if (kind == "pdf") PdfReader.read(ctx, tmp, base) { done, total -> bookUi.set("Reading page $done of $total…", busy = true) }
+                    else EpubReader.read(tmp, base)
+                }
+                val id = Repo.newId()
+                withContext(Dispatchers.IO) {
+                    Books.save(BookMeta(id, book.title, book.author, kind, book.chapters.map { BookChapter(it.title, "") }), book.chapters.map { it.text })
+                }
+                val first = Books.url(id, 0)
+                val novel = Repo.addNovel(book.title, first, book.chapters.first().title)
+                val items = book.chapters.mapIndexed { i, c -> ChapterItem((i + 1).toDouble(), c.title, Books.url(id, i)) }
+                Repo.saveToc(novel.id, "book://$id", items, "book", 1)
+                book.cover?.let { raw -> runCatching { Repo.saveCover(novel.id, Fetcher.toCover(raw).jpeg) } }
+                libraryStatus.set("Added “${book.title}” to your library.")
+                fetchChapterAwait(first)
+                val msg = "Imported “${book.title}”: ${items.size} chapter${if (items.size == 1) "" else "s"}."
+                bookUi.set(msg)
+                toast(msg)
+            } catch (e: Throwable) {
+                bookUi.set(if (e is IllegalStateException) e.message.orEmpty() else "Could not read that file: ${e.message}", error = true)
+            } finally {
+                tmp.delete()
+            }
+        }
+    }
 
     // ---------- next / previous ----------
 
@@ -267,6 +359,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun addCurrentNovel() {
         val ch = chapter.value ?: return
         if (ch.url.isEmpty()) return
+        if (Books.isBookUrl(ch.url)) { libraryStatus.set("Imported books are already in your library."); return }
         val name = ch.title.replace(Regex("\\s*[-–—:|]?\\s*(?:chapter|ch\\.?|episode|ep\\.?)\\s*\\d+.*$", RegexOption.IGNORE_CASE), "").trim()
         val existed = Repo.novelFor(ch.url) != null
         val n = Repo.addNovel(name, ch.url, ch.title)
@@ -279,6 +372,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     // ---------- covers (Library list only) ----------
 
     private fun maybeCover(n: Novel) {
+        if (Books.isBookUrl(n.url)) return
         if (Repo.hasCover(n.id)) return
         if (n.coverTry != 0L && System.currentTimeMillis() - n.coverTry < 7L * 24 * 3600 * 1000) return
         fetchCover(n.id, silent = true)
@@ -287,6 +381,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun fetchCover(id: String, silent: Boolean = false) {
         viewModelScope.launch {
             val n = Repo.novels.value.firstOrNull { it.id == id } ?: return@launch
+            if (Books.isBookUrl(n.url)) return@launch
             if (!silent) coverStatus.set("Looking for a cover…", busy = true)
             val c = try { Fetcher.findCover(n.url) } catch (_: Throwable) { null }
             if (c != null) {
@@ -301,7 +396,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun findMissingCovers() {
         viewModelScope.launch {
-            val missing = Repo.novels.value.filter { !Repo.hasCover(it.id) }
+            val missing = Repo.novels.value.filter { !Repo.hasCover(it.id) && !Books.isBookUrl(it.url) }
             if (missing.isEmpty()) { libraryStatus.set("Every novel already has a cover."); return@launch }
             var ok = 0
             missing.forEachIndexed { i, n ->
@@ -340,6 +435,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateToc(id: String) {
         viewModelScope.launch {
             val n = Repo.novels.value.firstOrNull { it.id == id } ?: return@launch
+            if (Books.isBookUrl(n.url)) { tocStatus.set("An imported book has a fixed chapter list."); return@launch }
             tocStatus.set("Looking for the chapter list…", busy = true)
             val before = Repo.tocCount(id)
             try {
@@ -357,6 +453,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun buildToc(id: String, count: Int) {
         val n = Repo.novels.value.firstOrNull { it.id == id } ?: return
+        if (Books.isBookUrl(n.url)) { tocStatus.set("An imported book has a fixed chapter list."); return }
         val items = TocFetcher.build(n, count)
         if (items == null) { tocStatus.set("This novel's link has no chapter number to build from.", error = true); return }
         Repo.saveToc(id, Extractor.novelPageUrl(n.url), items, "built", 0)
@@ -365,8 +462,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateAllTocs() {
         viewModelScope.launch {
-            val list = Repo.novels.value
-            if (list.isEmpty()) { libraryStatus.set("Add a novel first.", error = true); return@launch }
+            val list = Repo.novels.value.filter { !Books.isBookUrl(it.url) }
+            if (list.isEmpty()) { libraryStatus.set("Add a novel by link first.", error = true); return@launch }
             var ok = 0
             list.forEachIndexed { i, n ->
                 libraryStatus.set("Updating chapter lists… ${i + 1} of ${list.size} (${n.title})", busy = true)
@@ -470,29 +567,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ================= voice model =================
 
-    private fun installed(error: String = "") =
-        ModelUi(ModelStore.isReady(ctx, ModelStore.STANDARD), ModelStore.isReady(ctx, ModelStore.LIGHT), error = error)
-
-    fun downloadModel(id: String) {
-        if (model.value.downloading.isNotEmpty()) return
-        val bundle = ModelStore.bundle(id)
+    fun downloadModel() {
+        if (model.value.downloading) return
         viewModelScope.launch {
-            model.value = installed().copy(downloading = bundle.id)
+            model.value = ModelUi(ready = false, downloading = true)
             try {
-                ModelStore.download(ctx, bundle) { done, total ->
-                    model.value = installed().copy(downloading = bundle.id, progress = if (total > 0) done.toFloat() / total else 0f)
+                ModelStore.download(ctx, ModelStore.STANDARD) { done, total ->
+                    model.value = ModelUi(ready = false, downloading = true, progress = if (total > 0) done.toFloat() / total else 0f)
                 }
-                model.value = installed()
-            } catch (e: Throwable) { model.value = installed(e.message ?: "Download failed") }
+                model.value = ModelUi(ready = ModelStore.isReady(ctx))
+            } catch (e: Throwable) {
+                model.value = ModelUi(ready = ModelStore.isReady(ctx), error = e.message ?: "Download failed")
+            }
         }
-    }
-
-    /** Frees the space of a model that is not the one being spoken with. */
-    fun deleteModel(id: String) {
-        val bundle = ModelStore.bundle(id)
-        if (model.value.downloading.isNotEmpty() || ModelStore.active(ctx, Repo.settings.value.voiceModel)?.id == bundle.id) return
-        ModelStore.delete(ctx, bundle)
-        model.value = installed()
     }
 
     // ================= saved chapters =================

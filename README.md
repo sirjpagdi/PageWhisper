@@ -1,18 +1,17 @@
 # PageWhisper for Android
 
-A native Android reader that speaks web novel chapters with Kokoro voices that run **on your phone**. Kotlin and Jetpack Compose, no WebView in
+A native Android reader that speaks web novel chapters, EPUB books and PDF books with Kokoro voices that run **on your phone**. Kotlin and Jetpack Compose, no WebView in
 the app's own screens, no account, no server. `FEATURES.md` holds the spec of its features.
 
-> **0.5.0:** a Heat control setting (Fast, Balanced, Cool) with automatic fallback, a choice between the Standard and the Light (int8) voice
-> model, justified card descriptions, and the web version's references removed. Builds on 0.4.0's bundled fonts, stronger text contrast,
-> chapter title narration and brightness controls.
+> **0.6.0:** import **EPUB** and **PDF** books into the library and have them read aloud, chapter by chapter. Builds on 0.5.0's Heat control
+> and 0.4.0's bundled fonts, stronger text contrast, chapter title narration and brightness controls.
 > See [the changelog](docs/CHANGELOG.md) for details.
 
 ## Getting started
 
 1. Install the app and open it. Allow notifications (they carry the lock-screen controls).
 2. Go to **Settings → Voice model → Download** (about 350 MB, use Wi-Fi). The model is stored on the phone and reading works offline afterwards.
-3. Open a chapter: paste text, share a link to PageWhisper, import a `.txt` file, or use **Read in browser** for sites with bot protection.
+3. Open a chapter: paste text, share a link to PageWhisper, import a `.txt` file, or use **Read in browser** for sites with bot protection. Or go to **Open → Import a book** and pick an EPUB or PDF.
 4. Press play. For listening with the screen off, set the app's battery usage to **Unrestricted**.
 
 ## Fonts
@@ -41,13 +40,13 @@ All font licenses are included in `app/src/main/assets/font-licenses/`. The font
 app/src/main/java/com/pagewhisper/app/
   PageWhisperApp.kt, MainActivity.kt        app start, share-sheet input
   model/Models.kt                           data classes
-  text/   TextTools, Pronunciation, Extractor, ChapterList     pure logic, unit tested
-  data/   Repo (library, covers, lists), JsonFile, BackupCore (pure), BackupIO
+  text/   TextTools, Pronunciation, Extractor, ChapterList, EpubReader, PdfText     pure logic, unit tested; PdfReader (PDFBox) reads PDF files
+  data/   Repo (library, covers, lists), Books (imported books), JsonFile, BackupCore (pure), BackupIO
   net/    Fetcher (OkHttp), TocFetcher (chapter lists)
   tts/    ModelStore (download), TtsEngine (sherpa-onnx), Voices
   playback/ Playback (speech pipeline, highlight timing, sleep timer), PlaybackService (foreground + notification), Ambient (sound generators)
   ui/     AppViewModel, screens (Reader, Open, Library, Settings), Sheets, BrowserFetchScreen, Theme, Icons, Components
-app/src/test/   SharedVectorsTest.kt + shared-tests.json (fixed cases for the text tools)
+app/src/test/   SharedVectorsTest.kt + shared-tests.json (fixed cases for the text tools), BooksTest.kt (EPUB and PDF text)
 ```
 
 Choices worth knowing: the library is plain JSON files (no database); media controls use `MediaSessionCompat` (simple and stable; Media3 can come
@@ -55,7 +54,7 @@ later); the model is downloaded, never bundled.
 
 ## Features
 
-Fetch by link, paste, clipboard, `.txt` import, share-sheet input; 28 Kokoro voices and speed; sentence highlight and tap
+Fetch by link, paste, clipboard, `.txt` import, share-sheet input; **EPUB and PDF books**; 28 Kokoro voices and speed; sentence highlight and tap
 to jump; fullscreen; previous/next chapter with auto-next; novel library with moving bookmarks; saved chapters; covers (Library list only);
 **chapter lists**; ambient sounds; sleep timer; touch lock with hold-to-unlock; reading style (fonts, spacing, alignment, four themes, highlight
 styles); pronunciation rules; one-file backup and restore.
@@ -63,13 +62,21 @@ styles); pronunciation rules; one-file backup and restore.
 What Android adds:
 
 - Playing with the screen off through a foreground service, a notification, lock-screen controls and headset buttons.
-- Several CPU threads for speech, with a heat control (Fast, Balanced, Cool) and a choice of voice model (Standard or Light int8).
+- Several CPU threads for speech, with a heat control (Fast, Balanced, Cool).
 - Direct fetching, and **Read in browser** for sites with bot protection: pass the check yourself, then read the page.
 - In-app and system brightness controls that stay in sync; keep-screen-on with `FLAG_KEEP_SCREEN_ON`; the back button is blocked while locked.
 - Voice models stored once on the phone.
+- **Books:** import an EPUB or PDF (Open tab, or "Open with PageWhisper" from a file manager). A book is added to the Library with its cover and chapters;
+  Continue, the chapter list, previous/next, auto-next, highlight, pronunciation rules and the sleep timer all work on it. Books work offline and stay
+  on the phone: they are not part of a backup.
+  - **EPUB:** chapters and titles come from the book's table of contents; a file listed at several anchors is split at them; footnote marks and page
+    breaks are skipped. Books protected by DRM cannot be read.
+  - **PDF:** the text is rebuilt from the pages: lines are joined into paragraphs, hyphenated words are rejoined, and page numbers and running headers are
+    dropped. Chapters come from the PDF's bookmarks, else from headings like "Chapter 3", else from blocks of 10 pages. Two-column pages, tables
+    and footnotes can read out of order. A scanned PDF has no text and is refused (it would need text recognition, which is not part of the app).
 
 Not the same: the "outline" highlight style is drawn as an underline with a light fill (Compose spans cannot draw a ring around text); chapter lists
-are not part of a backup (they are fetched again).
+are not part of a backup (they are fetched again); imported books are not part of a backup either (import the file again on a new phone).
 
 ## Publishing on Google Play (later)
 

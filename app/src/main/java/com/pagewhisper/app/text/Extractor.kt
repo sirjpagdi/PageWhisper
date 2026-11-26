@@ -72,6 +72,7 @@ object Extractor {
 
     /** Chapters of one novel share a key: host + path without the trailing chapter number. */
     fun novelKey(u: String): String {
+        if (u.startsWith("book://")) return "book:" + u.removePrefix("book://").substringBefore('/') // an imported book
         if (u.toHttpUrlOrNull() == null) return ""
         val seg = segments(u).toMutableList()
         if (seg.size > 1 && seg.last().any { it.isDigit() }) seg.removeAt(seg.lastIndex)

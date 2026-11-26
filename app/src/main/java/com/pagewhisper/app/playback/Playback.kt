@@ -113,7 +113,6 @@ object Playback {
     fun init(application: Application) {
         app = application
         EngineHolder.modeProvider = { Repo.settings.value.heat }
-        EngineHolder.modelProvider = { Repo.settings.value.voiceModel }
         registerThermal()
     }
 

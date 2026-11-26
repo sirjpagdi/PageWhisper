@@ -65,9 +65,8 @@ object EngineHolder {
     private val ORDER = listOf("cool", "balanced", "fast")
     private val maxThreads = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(2, 3)
 
-    /** Where the chosen profile and the chosen voice model come from (set by Playback). */
+    /** Where the chosen profile comes from (set by Playback). */
     @Volatile var modeProvider: () -> String = { "cool" }
-    @Volatile var modelProvider: () -> String = { "standard" }
     @Volatile private var mode = "cool"
     @Volatile private var escalation = 0
     @Volatile private var urgent = false
@@ -102,7 +101,7 @@ object EngineHolder {
         val m = currentMode()
         val threads = wantThreads(m)
         val bg = m == "cool"
-        val bundle = ModelStore.active(ctx, modelProvider()) ?: throw IllegalStateException("MODEL_MISSING")
+        val bundle = ModelStore.active(ctx) ?: throw IllegalStateException("MODEL_MISSING")
         val current = engine
         if (current != null) {
             val sameModel = current.bundle.id == bundle.id

@@ -98,7 +98,6 @@ data class AppSettings(
     val brightness: Int = 100,
     val sleepLast: Int = 0,
     val heat: String = "cool",
-    val voiceModel: String = "standard",
 ) {
     fun sanitized(): AppSettings = AppSettings(
         voice = voice,
@@ -110,7 +109,6 @@ data class AppSettings(
         brightness = brightness.coerceIn(10, 100),
         sleepLast = if (sleepLast in 1..600) sleepLast else 0,
         heat = if (heat in HEAT_MODES) heat else "cool",
-        voiceModel = if (voiceModel in listOf("standard", "light")) voiceModel else "standard",
     )
 
     companion object {

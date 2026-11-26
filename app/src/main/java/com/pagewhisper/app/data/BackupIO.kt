@@ -9,7 +9,7 @@ object BackupIO {
         appVersion = BuildConfig.VERSION_NAME,
         reading = Repo.reading.value,
         settings = Repo.settings.value,
-        novels = Repo.novels.value,
+        novels = Repo.novels.value.filter { !Books.isBookUrl(it.url) }, // imported books stay on the phone
         chapters = Repo.chapters.value,
         pron = Repo.pron.value,
         coverDataUrl = { id ->
@@ -34,6 +34,7 @@ object BackupIO {
 
     /** Puts the backup in place of everything on this device. */
     fun applyReplace(b: CleanBackup) {
+        Repo.novels.value.forEach { n -> Books.parse(n.url)?.let { Books.delete(it.first) } } // books are not in a backup
         Repo.clearAllCovers()
         Repo.clearAllTocs() // chapter lists are not in a backup; they are fetched again
         val novels = b.novels.map { n ->

@@ -29,10 +29,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun OpenScreen(vm: AppViewModel) {
     val ctx = LocalContext.current
     val fetch by vm.fetchUi.collectAsStateWithLifecycle()
+    val book by vm.bookUi.collectAsStateWithLifecycle()
     val nextUrl by vm.nextUrl.collectAsStateWithLifecycle()
     var url by rememberSaveable { mutableStateOf("") }
     var title by rememberSaveable { mutableStateOf("") }
     var text by rememberSaveable { mutableStateOf("") }
+    val pickBook = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) vm.importBook(uri) }
     val pickText = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) vm.loadFromUri(uri) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
@@ -47,6 +49,13 @@ fun OpenScreen(vm: AppViewModel) {
                 if (url.isBlank()) vm.toast("Enter the chapter address first.") else vm.browser.value = url.trim()
             }, Modifier.fillMaxWidth())
             Hint("The page is read directly, then through a reader service. Sites with bot protection or a login may still block it. “Read in browser” opens the page here so you can pass the check yourself, then reads it. Pasting the text always works.")
+        }
+        PwCard("Import a book (EPUB or PDF)") {
+            PrimaryButton("Choose an EPUB or PDF file", {
+                pickBook.launch(arrayOf("application/epub+zip", "application/pdf", "application/octet-stream"))
+            }, Modifier.fillMaxWidth(), enabled = !book.busy)
+            StatusText(book.text, book.error)
+            Hint("The book is added to your library with its chapters and cover, and stays on this phone. EPUB books keep their chapters and titles. For a PDF the text is rebuilt from the pages: paragraphs are joined, page numbers and running headers are dropped, and chapters come from the PDF's bookmarks or from headings like “Chapter 3”. Scanned PDFs have no text and cannot be read. You can also open an EPUB or PDF from your file manager with PageWhisper.")
         }
         PwCard("Paste or import text") {
             PrimaryButton("Paste from clipboard & load", {

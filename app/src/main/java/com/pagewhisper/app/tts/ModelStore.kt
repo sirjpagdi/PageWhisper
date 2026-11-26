@@ -16,21 +16,18 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.coroutines.coroutineContext
 
-/** One downloadable Kokoro voice model. Both bundles carry the same 53 voices in the same order. */
+/** The downloadable Kokoro voice model. */
 class ModelBundle(val id: String, val url: String, val dirName: String, val modelFile: String, val title: String, val size: String)
 
 /**
- * Downloads and unpacks the Kokoro voice models into app-private storage (they are far too big to ship inside the app).
- * Standard is the full-precision model; Light is the official int8 build of the same model, about a third of the size.
+ * Downloads and unpacks the Kokoro voice model into app-private storage (it is far too big to ship inside the app).
  * No resume yet.
  */
 object ModelStore {
-    private const val BASE = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/"
-    val STANDARD = ModelBundle("standard", BASE + "kokoro-multi-lang-v1_0.tar.bz2", "kokoro-multi-lang-v1_0", "model.onnx", "Standard", "about 350 MB")
-    val LIGHT = ModelBundle("light", BASE + "kokoro-int8-multi-lang-v1_0.tar.bz2", "kokoro-int8-multi-lang-v1_0", "model.int8.onnx", "Light (int8)", "about 130 MB")
-    val ALL = listOf(STANDARD, LIGHT)
-
-    fun bundle(id: String): ModelBundle = if (id == LIGHT.id) LIGHT else STANDARD
+    val STANDARD = ModelBundle(
+        "standard", "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_0.tar.bz2",
+        "kokoro-multi-lang-v1_0", "model.onnx", "Standard", "about 350 MB",
+    )
 
     fun dir(ctx: Context, b: ModelBundle) = File(ctx.filesDir, b.dirName)
 
@@ -40,13 +37,15 @@ object ModelStore {
             File(d, "espeak-ng-data").isDirectory && File(d, ".complete").exists()
     }
 
-    /** True if at least one model is installed. */
-    fun isReady(ctx: Context): Boolean = ALL.any { isReady(ctx, it) }
+    fun isReady(ctx: Context): Boolean = isReady(ctx, STANDARD)
 
-    /** The model to speak with: the chosen one if it is installed, otherwise the other one, otherwise none. */
-    fun active(ctx: Context, chosenId: String): ModelBundle? {
-        val chosen = bundle(chosenId)
-        return if (isReady(ctx, chosen)) chosen else ALL.firstOrNull { isReady(ctx, it) }
+    /** The model to speak with, or none if it is not installed. */
+    fun active(ctx: Context): ModelBundle? = if (isReady(ctx, STANDARD)) STANDARD else null
+
+    /** Removes what an earlier test version left behind: the int8 model and half-finished downloads. */
+    fun removeLegacy(ctx: Context) {
+        File(ctx.filesDir, "kokoro-int8-multi-lang-v1_0").deleteRecursively()
+        ctx.filesDir.listFiles { f -> f.name.startsWith("download-") && f.name.endsWith(".tmp") }?.forEach { it.deleteRecursively() }
     }
 
     fun delete(ctx: Context, b: ModelBundle) { dir(ctx, b).deleteRecursively() }

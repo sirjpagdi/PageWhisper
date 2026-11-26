@@ -49,6 +49,7 @@ object Repo {
     val coverVersion: StateFlow<Int> = _coverVersion.asStateFlow()
 
     fun init(context: Context) {
+        Books.init(context)
         dir = File(context.filesDir, "library").also { it.mkdirs() }
         coversDir = File(dir, "covers").also { it.mkdirs() }
         novelsFile = JsonFile(File(dir, "novels.json"), ListSerializer(Novel.serializer()), emptyList())
@@ -134,6 +135,7 @@ object Repo {
     }
 
     fun removeNovel(id: String) {
+        _novels.value.firstOrNull { it.id == id }?.let { n -> Books.parse(n.url)?.let { Books.delete(it.first) } } // an imported book goes with its files
         removeCover(id)
         removeToc(id)
         saveNovels(_novels.value.filter { it.id != id })

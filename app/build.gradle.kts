@@ -13,8 +13,8 @@ android {
         applicationId = "com.pagewhisper.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.6.0"
         // Most phones are arm64. Remove this line to also build for x86 emulators (a bigger APK).
         ndk { abiFilters += "arm64-v8a" }
     }
@@ -35,7 +35,7 @@ android {
         compose = true
         buildConfig = true
     }
-    packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+    packaging { resources { excludes += listOf("/META-INF/{AL2.0,LGPL2.1}", "/META-INF/DEPENDENCIES", "/META-INF/LICENSE*", "/META-INF/NOTICE*") } }
     testOptions { unitTests.isReturnDefaultValues = true }
 }
 
@@ -59,6 +59,8 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.jsoup)
     implementation(libs.commons.compress)
+    // Reads the text of PDF books (Apache-2.0). EPUB needs nothing extra: it is a zip of web pages, read with jsoup.
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
     testImplementation(libs.junit)
 }

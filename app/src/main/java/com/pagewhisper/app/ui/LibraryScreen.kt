@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pagewhisper.app.data.Books
 import com.pagewhisper.app.data.Repo
 import com.pagewhisper.app.model.Novel
 import com.pagewhisper.app.text.Extractor
@@ -66,7 +67,7 @@ fun LibraryScreen(vm: AppViewModel) {
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item { Text("Novel library", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = c.text) }
-        if (novels.isEmpty()) item { Hint("No novels yet. Load a chapter from a link and tap “Add current novel”, or add one by link below.") }
+        if (novels.isEmpty()) item { Hint("No novels yet. Load a chapter from a link and tap “Add current novel”, add one by link below, or import an EPUB or PDF book from the Open tab.") }
         items(novels.sortedByDescending { it.updated }, key = { it.id }) { NovelRow(it, vm) }
         item {
             PwCard {
@@ -108,6 +109,7 @@ private fun NovelRow(n: Novel, vm: AppViewModel) {
         value = withContext(Dispatchers.IO) { Repo.coverFile(n.id).takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
     }
     val count = remember(n.id, tocVersion) { Repo.tocCount(n.id) }
+    val isBook = Books.isBookUrl(n.url)
     var editing by remember { mutableStateOf(false) }
     var removing by remember { mutableStateOf(false) }
 
@@ -122,14 +124,14 @@ private fun NovelRow(n: Novel, vm: AppViewModel) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(n.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = c.text)
             Text(
-                Extractor.hostOf(n.url) + (if (n.chapter.isNotEmpty()) " · " + n.chapter else "") + (if (count > 0) " · %,d chapters".format(count) else ""),
+                (if (isBook) Books.label(n.url) else Extractor.hostOf(n.url)) + (if (n.chapter.isNotEmpty()) " · " + n.chapter else "") + (if (count > 0) " · %,d chapters".format(count) else ""),
                 fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = c.muted,
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 PrimaryButton("Continue", { vm.continueNovel(n) })
                 SoftButton("Chapters", { vm.openSheet(Sheet.Toc(n.id)) })
-                SoftButton("Open in browser", { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(n.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) })
-                SoftButton("Edit link", { editing = true })
+                if (!isBook) SoftButton("Open in browser", { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(n.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) })
+                if (!isBook) SoftButton("Edit link", { editing = true })
                 SoftButton("Remove", { removing = true })
             }
         }
@@ -146,7 +148,7 @@ private fun NovelRow(n: Novel, vm: AppViewModel) {
     if (removing) {
         AlertDialog(
             onDismissRequest = { removing = false }, title = { Text("Remove ${n.title}?") },
-            text = { Text("Its cover and chapter list are removed too. Saved chapters are kept.") },
+            text = { Text(if (isBook) "The book, its cover and chapter list are removed from this phone. Saved chapters are kept. You can import the file again later." else "Its cover and chapter list are removed too. Saved chapters are kept.") },
             confirmButton = { TextButton({ Repo.removeNovel(n.id); removing = false }) { Text("Remove") } },
             dismissButton = { TextButton({ removing = false }) { Text("Cancel") } },
         )

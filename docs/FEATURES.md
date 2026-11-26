@@ -7,6 +7,7 @@ This file is the spec of the Android app's features: names, ranges, defaults and
 | Feature | Status |
 |---|---|
 | Fetch a chapter by link (reader service, direct, proxy) | Done (OkHttp + Jsoup) |
+| **Books**: import EPUB and PDF into the library | Done (jsoup for EPUB, PDFBox for PDF; unit tested text rules) |
 | Paste, clipboard, import `.txt`, share-sheet input | Done |
 | Kokoro voices (28) and speed | Done (sherpa-onnx) |
 | Sentence highlight, tap a sentence to jump | Done |
@@ -391,6 +392,44 @@ Test vectors: `shared-tests.json` -> `backupMerge`. Both apps must produce the s
 
 ---
 
+## Spec: Books (EPUB and PDF)
+
+A book is imported from a file, kept on the phone, and read like a novel. Nothing leaves the phone.
+
+### Import
+- **Open tab → Import a book** (system file picker, types `application/epub+zip`, `application/pdf`), or "Open with PageWhisper" on such a file (intent filter on VIEW). The file's contents decide the kind, not its name: `%PDF` is a PDF, `PK` is an EPUB.
+- The file is copied to the cache first (limit 400 MB), read, and the copy is deleted. The status line shows "Reading page n of N" for a PDF.
+- On success the book is saved, added to the Library, and its first chapter opens. On failure the message says why: not an EPUB or PDF, protected (DRM or password), a scan without text, nothing readable.
+
+### Storage
+- `files/books/<id>/meta.json` (id, title, author, kind, chapters: title and file) and `c<n>.txt` per chapter.
+- In the Library a book is a novel with address `book://<id>/<n>` and key `book:<id>`. Its chapter list is saved as an ordinary chapter list (numbers 1 to N), so bookmarks, the Chapters sheet, previous/next, auto-next and Continue work unchanged.
+- Removing the novel deletes the book's files, cover and list.
+- Not in a backup. "Replace everything" on restore removes imported books; "Merge" keeps them.
+- Not offered for books: Open in browser, Edit link, Update chapter list, Build by number, finding covers online.
+
+### EPUB (`EpubReader`)
+- Order: the book's spine. Titles: the EPUB 3 nav file, else the NCX file.
+- A file listed at several anchors is split at those anchors. A file with no title and no heading is joined to the chapter before it; a short file with no title (cover or title page) is skipped.
+- Skipped inside text: scripts, styles, images, ruby notes, footnote and endnote parts, note marks, page-break markers.
+- Text is taken from paragraphs, headings, list items, quotes and table cells, in order. A chapter's heading is its first paragraph, so it is read once (title and first paragraph are not repeated).
+- The cover is the book's cover image, scaled like any cover.
+- DRM (`xmlenc#aes` in `encryption.xml`) is refused. Font obfuscation is not DRM.
+
+### PDF (`PdfReader`, `PdfText`)
+- Text per page by PDFBox, sorted by position.
+- Page numbers (digits, or Roman numerals up to 399, alone on a line at the top or bottom) and lines that repeat at the edge of 30% of the pages (minimum 3) are dropped.
+- Lines become paragraphs: a sentence-ending line that is clearly shorter than the usual line ends a paragraph; a heading line (`Chapter 3`, `Prologue`, or a short all-capitals line of two or more words) stands alone; `word-` + lowercase start joins the word. A paragraph may continue across a page break.
+- Chapters, in order of preference: the PDF's bookmarks (top level, or the second level when the top has a single root); headings `Chapter/Part/Book <number>` found in the text, at least 3, with a short unpunctuated line after them added to the title; blocks of 10 pages titled "Pages a-b".
+- Cover: the first page drawn small. Title and author come from the file's information, else the file name.
+- Refused: password-protected PDFs, and PDFs with almost no text (scans). Text recognition (OCR) is not part of the app.
+
+### Acceptance checks
+- A small EPUB 3 gives its chapters with their titles; an NCX book splits one file at anchors; an untitled file joins the chapter before; a DRM book is refused (`BooksTest`).
+- Page numbers and repeated headers are removed; lines join into paragraphs; hyphenated words rejoin; chapters come from bookmarks, from headings, or from blocks of 10 pages (`BooksTest`).
+- Not covered by tests (needs a phone): the file picker, PDFBox reading a real PDF, covers.
+
+---
 ## Spec: Chapter lists (table of contents)
 
 Every novel in the Library can have a complete chapter list. It powers the **Chapters** sheet and makes Previous / Next

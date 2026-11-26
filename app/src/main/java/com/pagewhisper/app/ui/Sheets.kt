@@ -71,6 +71,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.pagewhisper.app.data.Books
 import com.pagewhisper.app.data.Repo
 import com.pagewhisper.app.model.PronRule
 import com.pagewhisper.app.model.ReadingStyle
@@ -454,6 +455,7 @@ private fun TocSheet(vm: AppViewModel, id: String) {
     val version by Repo.tocVersion.collectAsStateWithLifecycle()
     val status by vm.tocStatus.collectAsStateWithLifecycle()
     val novel = novels.firstOrNull { it.id == id } ?: return
+    val isBook = Books.isBookUrl(novel.url)
     val items = remember(id, version) { Repo.tocItems(id) }
     val meta = remember(id, version) { Repo.tocMeta(id) }
     var asc by remember { mutableStateOf(true) }
@@ -469,8 +471,8 @@ private fun TocSheet(vm: AppViewModel, id: String) {
     Column(Modifier.fillMaxHeight(0.9f)) {
         SheetHeader(novel.title, onDone = { vm.closeSheet() })
         Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Hint(meta?.let { "%,d chapters · %s on %s".format(it.count, if (it.source == "built") "built by number" else "read from the site", java.text.DateFormat.getDateInstance().format(java.util.Date(it.updated))) } ?: "No chapter list yet. Tap Update chapter list.")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Hint(if (isBook) "%,d chapters · imported %s book".format(items.size, Books.kindLabel(novel.url)) else meta?.let { "%,d chapters · %s on %s".format(it.count, if (it.source == "built") "built by number" else "read from the site", java.text.DateFormat.getDateInstance().format(java.util.Date(it.updated))) } ?: "No chapter list yet. Tap Update chapter list.")
+            if (!isBook) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PrimaryButton("Update chapter list", { vm.updateToc(id) }, Modifier.weight(1f), enabled = !status.busy)
                 SoftButton("Build by number", { buildDialog = true })
             }
@@ -495,7 +497,7 @@ private fun TocSheet(vm: AppViewModel, id: String) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(it.title, Modifier.weight(1f), fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, color = c.text)
-                    Box(Modifier.clickable { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.padding(4.dp)) { PwIcon("external", tint = c.muted, size = 18.dp) }
+                    if (!isBook) Box(Modifier.clickable { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.padding(4.dp)) { PwIcon("external", tint = c.muted, size = 18.dp) }
                 }
             }
         }

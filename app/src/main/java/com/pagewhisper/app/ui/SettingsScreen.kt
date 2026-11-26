@@ -106,27 +106,18 @@ fun SettingsScreen(vm: AppViewModel) {
         }
 
         PwCard("Voice model") {
-            Segmented(ModelStore.ALL.map { it.id to it.title }, s.voiceModel) { v -> vm.update { it.copy(voiceModel = v) } }
-            val chosen = ModelStore.bundle(s.voiceModel)
-            val other = ModelStore.ALL.first { it.id != chosen.id }
-            val ready = if (chosen.id == ModelStore.LIGHT.id) model.light else model.standard
-            val otherReady = if (other.id == ModelStore.LIGHT.id) model.light else model.standard
             when {
-                model.downloading == chosen.id -> {
+                model.downloading -> {
                     LinearProgressIndicator(progress = { model.progress }, Modifier.fillMaxWidth(), color = c.accent, trackColor = c.line)
                     Text("Downloading… ${(model.progress * 100).toInt()}% (keep the app open)", fontSize = 12.sp, color = c.muted)
                 }
-                ready -> {
-                    Text("Installed. Speech is made on this phone and works offline.", fontSize = 13.sp, color = c.green)
-                    if (otherReady) SoftButton("Remove the ${other.title} model to free space", { vm.deleteModel(other.id) }, Modifier.fillMaxWidth(), enabled = model.downloading.isEmpty())
-                }
+                model.ready -> Text("Installed. Speech is made on this phone and works offline.", fontSize = 13.sp, color = c.green)
                 else -> {
-                    PrimaryButton("Download the ${chosen.title} model (${chosen.size})", { vm.downloadModel(chosen.id) }, Modifier.fillMaxWidth(), enabled = model.downloading.isEmpty())
+                    PrimaryButton("Download the voice model (${ModelStore.STANDARD.size})", { vm.downloadModel() }, Modifier.fillMaxWidth())
                     StatusText(model.error, true)
-                    if (otherReady) Hint("Until it is installed, the ${other.title} model is used.")
+                    Hint("Needed once; use Wi-Fi. The model is stored on this phone and reading works offline afterwards.")
                 }
             }
-            Hint("Standard is the original full-precision voice. Light is the 8-bit (int8) build of the same voice: about a third of the size and lighter on memory, so it should run cooler, with almost the same sound. Both work offline, and a switch applies from the next section. Needed once; use Wi-Fi.")
         }
 
         PwCard("Ambient sound") {
@@ -176,10 +167,10 @@ fun SettingsScreen(vm: AppViewModel) {
             Hint("Developed by Sir_JPagdi")
 
             Label("What it does")
-            Hint("Paste a chapter, share a link to the app, open a .txt file or read a page in the in-app browser. PageWhisper cleans the text, reads it aloud, highlights the sentence being spoken and keeps your place in every novel in your Library. Chapter lists, auto-next, a sleep timer with fade-out, ambient sounds and pronunciation rules are all built in.")
+            Hint("Paste a chapter, share a link to the app, open a .txt file, import an EPUB or PDF book, or read a page in the in-app browser. PageWhisper cleans the text, reads it aloud, highlights the sentence being spoken and keeps your place in every novel in your Library. Chapter lists, auto-next, a sleep timer with fade-out, ambient sounds and pronunciation rules are all built in.")
 
             Label("Private by design")
-            Hint("No account, no ads, no tracking and no server of ours. Your library, saved chapters, pronunciation rules and settings stay on this phone. The only things that leave it are the chapter links you choose to fetch and the one-time voice model download.")
+            Hint("No account, no ads, no tracking and no server of ours. Your library, imported books, saved chapters, pronunciation rules and settings stay on this phone. Imported books are not part of backups. The only things that leave it are the chapter links you choose to fetch and the one-time voice model download.")
 
             Label("Voice")
             Hint("28 Kokoro voices, speech made on-device by sherpa-onnx. After the one-time voice model download, reading works fully offline. Speech is generated a little ahead of the audio, on as few and as efficient processor cores as it can keep up with, and slows down by itself if the phone reports heat. Cool is the default heat setting; longer chunks run cooler than shorter ones.")
@@ -188,7 +179,7 @@ fun SettingsScreen(vm: AppViewModel) {
             Hint("Four themes, thirteen reading fonts, adjustable size, spacing, alignment and highlight style. Each chapter is announced by its number and title before the text begins.")
 
             Label("Credits")
-            Hint("Voices: Kokoro (Apache-2.0). Engine: sherpa-onnx (Apache-2.0) with espeak-ng phonemes (GPL-3). Fonts: Literata, Merriweather, Lora, Atkinson Hyperlegible, Lexend, OpenDyslexic, EB Garamond, Crimson Pro, Source Serif 4 and Montserrat, all under the SIL Open Font License.")
+            Hint("Voices: Kokoro (Apache-2.0). Engine: sherpa-onnx (Apache-2.0) with espeak-ng phonemes (GPL-3). PDF text: PDFBox for Android (Apache-2.0). Fonts: Literata, Merriweather, Lora, Atkinson Hyperlegible, Lexend, OpenDyslexic, EB Garamond, Crimson Pro, Source Serif 4 and Montserrat, all under the SIL Open Font License.")
 
             Label("Tips")
             Hint("For listening with the screen off, set this app's battery usage to Unrestricted. Back up from this screen now and then.")
