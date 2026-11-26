@@ -11,7 +11,12 @@
   and password-protected PDFs are refused. New dependency: PDFBox for Android (Apache-2.0).
 - Books stay on the phone and are not part of backups; "Replace everything" on restore removes them, "Merge" keeps them.
 - Library: a book shows its kind and author, and hides the web-only buttons (Open in browser, Edit link, Update chapter list, Build by number).
-- Unit tests for the EPUB reader and the PDF text rules (`BooksTest`).
+- **Prepared chapters** (Settings → Prepare next chapters: Off, Text, Text + speech; default Text + speech). The next 3 chapters of a web novel are
+  fetched in the background, so they open at once and read offline. The speech for them is made while the phone is charging and nobody is
+  listening, and saved; playing saved speech needs almost no processor power, so the phone stays cool. The player also saves the speech it
+  makes, so replays and the previous chapter are free. Chapters more than 3 away from the open one are deleted automatically, the saved
+  speech is kept under 600 MB, and "Clear prepared chapters" empties it. New dependency: WorkManager.
+- Unit tests for the EPUB reader and the PDF text rules (`BooksTest`) and for saved speech (`PreparedTest`).
 - The Light (int8) voice model option is removed: it sounded off. Its files and half-finished downloads are deleted the first time the app
   starts, and Settings → Voice model is back to the single full-precision model. The safer download (unpacked in a staging folder first) stays.
 - versionCode 6, versionName 0.6.0.

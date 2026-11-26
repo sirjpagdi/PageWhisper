@@ -14,6 +14,7 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
+import com.pagewhisper.app.data.AudioCache
 import com.pagewhisper.app.data.Repo
 import com.pagewhisper.app.model.Section
 import com.pagewhisper.app.text.TextTools
@@ -121,6 +122,15 @@ object Playback {
      * and takes short rests between sections. It switches back only when the phone is fully cool again.
      */
     @Volatile private var hot = false
+
+    /** True while the phone reports it is hot. */
+    fun isHot(): Boolean = hot
+
+    /** True while speech is playing (not paused). */
+    fun isBusy(): Boolean = _ui.value.playing && !_ui.value.paused
+
+    /** The address of the chapter being played, used to find and keep its prepared speech; empty for pasted text. */
+    @Volatile var cacheUrl: String = ""
 
     private fun registerThermal() {
         if (Build.VERSION.SDK_INT < 29) return
@@ -267,6 +277,7 @@ object Playback {
         }
 
         // Generates speech ahead of what is being played.
+        val chapterUrl = cacheUrl
         val producer = launch(Dispatchers.Default) {
             try {
                 for (i in start until sections.size) {
@@ -279,8 +290,18 @@ object Playback {
                     val sec = sections.getOrNull(i) ?: break
                     val settings = Repo.settings.value
                     val began = SystemClock.elapsedRealtime()
-                    val pcm = if (sec.speech.isBlank()) FloatArray(0)
-                    else EngineHolder.generate(app, sec.speech, Voices.sidOf(settings.voice), settings.rate.toFloat())
+                    val sid = Voices.sidOf(settings.voice)
+                    val rate = settings.rate.toFloat()
+                    // Speech that was prepared earlier (or made when this chapter was played before) costs no processor power.
+                    val cacheKey = if (sec.speech.isBlank() || chapterUrl.isEmpty() || settings.prefetch == "off") "" else AudioCache.key(sid, rate, sec.speech)
+                    val cached = if (cacheKey.isEmpty()) null else AudioCache.get(chapterUrl, cacheKey)
+                    val pcm = when {
+                        sec.speech.isBlank() -> FloatArray(0)
+                        cached != null -> cached
+                        else -> EngineHolder.generate(app, sec.speech, sid, rate).also {
+                            if (cacheKey.isNotEmpty() && it.isNotEmpty()) AudioCache.put(chapterUrl, cacheKey, it)
+                        }
+                    }
                     queued.addAndGet(pcm.size.toLong())
                     clips.send(Clip(i, pcm))
                     // Duty cycle: while the phone is hot, rest for half as long as the section took to make, as long as

@@ -98,6 +98,7 @@ data class AppSettings(
     val brightness: Int = 100,
     val sleepLast: Int = 0,
     val heat: String = "cool",
+    val prefetch: String = "audio",
 ) {
     fun sanitized(): AppSettings = AppSettings(
         voice = voice,
@@ -109,10 +110,12 @@ data class AppSettings(
         brightness = brightness.coerceIn(10, 100),
         sleepLast = if (sleepLast in 1..600) sleepLast else 0,
         heat = if (heat in HEAT_MODES) heat else "cool",
+        prefetch = if (prefetch in PREFETCH_MODES) prefetch else "audio",
     )
 
     companion object {
         val HEAT_MODES = listOf("fast", "balanced", "cool")
+        val PREFETCH_MODES = listOf("off", "text", "audio")
         val AMBIENT_KEYS = listOf("off", "rain", "heavy", "storm", "ocean", "insects", "forest", "wind", "fire", "brown")
     }
 }

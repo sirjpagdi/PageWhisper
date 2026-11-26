@@ -50,6 +50,8 @@ object Repo {
 
     fun init(context: Context) {
         Books.init(context)
+        AudioCache.init(context)
+        ChapterCache.init(context)
         dir = File(context.filesDir, "library").also { it.mkdirs() }
         coversDir = File(dir, "covers").also { it.mkdirs() }
         novelsFile = JsonFile(File(dir, "novels.json"), ListSerializer(Novel.serializer()), emptyList())

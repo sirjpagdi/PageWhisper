@@ -120,6 +120,12 @@ fun SettingsScreen(vm: AppViewModel) {
             }
         }
 
+        PwCard("Prepare next chapters") {
+            Segmented(listOf("off" to "Off", "text" to "Text", "audio" to "Text + speech"), s.prefetch) { v -> vm.setPrefetch(v) }
+            Hint("While you read, the next 3 chapters of a web novel are fetched in the background, so they open at once and can be read without a connection. With Text + speech, the speech for them is also made while the phone is charging and you are not listening; playing prepared speech needs almost no processor power, so the phone stays cool. Chapters more than 3 away from the one you are on are deleted automatically.")
+            SoftButton("Clear prepared chapters", { vm.clearPrepared() }, Modifier.fillMaxWidth())
+        }
+
         PwCard("Ambient sound") {
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp), maxItemsInEachRow = 3) {
                 for ((key, label, icon) in AMBIENT) {
@@ -167,7 +173,7 @@ fun SettingsScreen(vm: AppViewModel) {
             Hint("Developed by Sir_JPagdi")
 
             Label("What it does")
-            Hint("Paste a chapter, share a link to the app, open a .txt file, import an EPUB or PDF book, or read a page in the in-app browser. PageWhisper cleans the text, reads it aloud, highlights the sentence being spoken and keeps your place in every novel in your Library. Chapter lists, auto-next, a sleep timer with fade-out, ambient sounds and pronunciation rules are all built in.")
+            Hint("Paste a chapter, share a link to the app, open a .txt file, import an EPUB or PDF book, or read a page in the in-app browser. PageWhisper cleans the text, reads it aloud, highlights the sentence being spoken and keeps your place in every novel in your Library. Chapters are prepared in the background, and chapter lists, auto-next, a sleep timer with fade-out, ambient sounds and pronunciation rules are all built in.")
 
             Label("Private by design")
             Hint("No account, no ads, no tracking and no server of ours. Your library, imported books, saved chapters, pronunciation rules and settings stay on this phone. Imported books are not part of backups. The only things that leave it are the chapter links you choose to fetch and the one-time voice model download.")

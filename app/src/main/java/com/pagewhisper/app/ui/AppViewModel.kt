@@ -6,9 +6,12 @@ import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pagewhisper.app.data.BackupCore
+import com.pagewhisper.app.data.AudioCache
 import com.pagewhisper.app.data.BookChapter
 import com.pagewhisper.app.data.BookMeta
 import com.pagewhisper.app.data.Books
+import com.pagewhisper.app.data.ChapterCache
+import com.pagewhisper.app.data.ChapterNav
 import com.pagewhisper.app.data.BackupException
 import com.pagewhisper.app.data.BackupIO
 import com.pagewhisper.app.data.CleanBackup
@@ -22,6 +25,7 @@ import com.pagewhisper.app.model.Section
 import com.pagewhisper.app.net.Fetcher
 import com.pagewhisper.app.net.TocFetcher
 import com.pagewhisper.app.playback.Playback
+import com.pagewhisper.app.playback.Prefetch
 import com.pagewhisper.app.text.ChapterItem
 import com.pagewhisper.app.text.ChapterList
 import com.pagewhisper.app.text.EpubReader
@@ -142,6 +146,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private fun rebuild(ch: ChapterState) {
         val secs = TextTools.buildSections(ch.text, Repo.settings.value.chunk, pronEngine, novelKeyOf(ch.url), spokenTitle(ch))
         sections.value = secs
+        Playback.cacheUrl = ch.url
         Playback.setChapter(ch.title, Repo.novelFor(ch.url)?.title ?: "", secs)
     }
 
@@ -172,6 +177,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         Repo.trackNovel(ch.title, url)?.let { maybeCover(it) }
         if (!silent) tab.value = Tab.READ
         Repo.saveLast(Repo.LastChapter(ch.title, ch.text, ch.url, ch.next, 0))
+        if (url.isNotEmpty()) Prefetch.onChapterOpened(ctx, url, nx) // next chapters are prepared in the background
     }
 
     fun loadPasted(text: String, titleField: String, urlField: String, note: String = "") {
@@ -208,6 +214,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val u = url.trim()
         if (Books.isBookUrl(u)) return openBookChapter(u, autoplay)
         if (!(u.startsWith("http://") || u.startsWith("https://"))) { fetchUi.set("Enter a valid link starting with https://", error = true); return false }
+        val prepared = withContext(Dispatchers.IO) { ChapterCache.get(u) }
+        if (prepared != null) { // fetched ahead of time: opens at once, and works offline
+            loadChapter(prepared.title, prepared.body, u, tocNeighbor(u, 1).ifEmpty { prepared.next }.ifEmpty { Extractor.guessNext(u) })
+            fetchUi.set("Chapter ready.")
+            if (autoplay) Playback.play(0)
+            return true
+        }
         fetchUi.set("Fetching…", busy = true)
         val r = Fetcher.chapter(u)
         val ex = r.getOrNull()
@@ -221,6 +234,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         fetchUi.set("Chapter fetched.")
         if (autoplay) Playback.play(0)
         return true
+    }
+
+    /** Changes how much is prepared in the background; "off" also throws away what was prepared. */
+    fun setPrefetch(mode: String) {
+        update { it.copy(prefetch = mode) }
+        if (mode == "off") { viewModelScope.launch(Dispatchers.IO) { Prefetch.clearAll(ctx) }; return }
+        if (mode == "text") Prefetch.cancelAudio(ctx)
+        chapter.value?.let { Prefetch.onChapterOpened(ctx, it.url, nextUrl.value) }
+    }
+
+    fun clearPrepared() {
+        viewModelScope.launch(Dispatchers.IO) { Prefetch.clearAll(ctx) }
+        toast("Prepared chapters cleared.")
     }
 
     fun fetchChapter(url: String, autoplay: Boolean = false) { viewModelScope.launch { fetchChapterAwait(url, autoplay) } }
@@ -309,13 +335,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- next / previous ----------
 
-    fun tocNeighbor(url: String, delta: Int): String {
-        if (url.isEmpty()) return ""
-        val n = Repo.novelFor(url) ?: return ""
-        val items = Repo.tocItems(n.id)
-        val i = ChapterList.indexOf(items, url)
-        return if (i >= 0 && i + delta in items.indices) items[i + delta].url else ""
-    }
+    fun tocNeighbor(url: String, delta: Int): String = ChapterNav.tocNeighbor(url, delta)
 
     fun hasPrev(): Boolean = pos > 0 || tocNeighbor(chapter.value?.url.orEmpty(), -1).isNotEmpty()
 

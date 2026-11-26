@@ -61,6 +61,8 @@ dependencies {
     implementation(libs.commons.compress)
     // Reads the text of PDF books (Apache-2.0). EPUB needs nothing extra: it is a zip of web pages, read with jsoup.
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    // Runs the overnight preparation of speech while the phone charges.
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     testImplementation(libs.junit)
 }

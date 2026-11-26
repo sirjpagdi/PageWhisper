@@ -7,6 +7,7 @@ This file is the spec of the Android app's features: names, ranges, defaults and
 | Feature | Status |
 |---|---|
 | Fetch a chapter by link (reader service, direct, proxy) | Done (OkHttp + Jsoup) |
+| **Prepared chapters**: next 3 chapters fetched, speech made while charging, old ones deleted | Done (WorkManager; background job needs a phone to check) |
 | **Books**: import EPUB and PDF into the library | Done (jsoup for EPUB, PDFBox for PDF; unit tested text rules) |
 | Paste, clipboard, import `.txt`, share-sheet input | Done |
 | Kokoro voices (28) and speed | Done (sherpa-onnx) |
@@ -392,6 +393,37 @@ Test vectors: `shared-tests.json` -> `backupMerge`. Both apps must produce the s
 
 ---
 
+## Spec: Prepared chapters
+
+The app prepares the chapters after the one being read, so they open at once, work without a connection, and play without making the phone work hard.
+
+### Setting (Settings → Prepare next chapters)
+- **Off:** nothing is prepared; anything prepared is deleted.
+- **Text:** the next 3 chapters are fetched in the background.
+- **Text + speech (default):** as Text, and the speech for those chapters is made and saved.
+- "Clear prepared chapters" deletes everything prepared.
+
+### Text
+- Each time a chapter is opened, the next 3 chapters are found (the novel's chapter list, else the "next" links) and any not yet saved are fetched, one at a time with a short pause. A failure (offline, blocked, no such chapter) stops quietly.
+- A saved chapter opens without a request. Imported books need no fetching; their speech is prepared the same way.
+- Saved in the app's cache folder, one file per chapter.
+
+### Speech
+- Made by a background job (WorkManager) that the system starts only while the phone is charging and the battery is not low. It starts 20 seconds after a chapter is opened and is replaced when another chapter is opened.
+- It makes the speech section by section with the current voice, speed, chunk size and pronunciation rules, and saves it as 16-bit audio. A section is found again by voice, speed and its exact spoken text, so changing any of them makes new speech and never plays the wrong audio.
+- It waits while someone is listening (the player has the processor), and stops, to try again later, when the charger is unplugged or the phone reports heat.
+- The player uses saved speech for a section when it has it. Speech that the player makes itself is also saved, so replays and the previous chapter need no new work.
+
+### Clean-up
+- Whenever a chapter is opened, saved text and speech of chapters that are not the open one, one of the next 3, or (when the chapter list knows them) one of the previous 3, are deleted.
+- The saved speech is kept under 600 MB: the least recently used chapters go first, never the open one.
+- Android may empty the cache folder at any time; nothing depends on it.
+
+### Acceptance checks
+- Saved samples read back within 0.0002 of the original; a section is found by voice, speed and text only (`PreparedTest`).
+- Not covered by tests (needs a phone): the background job, the charging condition and fetching ahead.
+
+---
 ## Spec: Books (EPUB and PDF)
 
 A book is imported from a file, kept on the phone, and read like a novel. Nothing leaves the phone.

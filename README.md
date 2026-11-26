@@ -3,7 +3,7 @@
 A native Android reader that speaks web novel chapters, EPUB books and PDF books with Kokoro voices that run **on your phone**. Kotlin and Jetpack Compose, no WebView in
 the app's own screens, no account, no server. `FEATURES.md` holds the spec of its features.
 
-> **0.6.0:** import **EPUB** and **PDF** books into the library and have them read aloud, chapter by chapter. Builds on 0.5.0's Heat control
+> **0.6.0:** import **EPUB** and **PDF** books into the library and have them read aloud, chapter by chapter, and prepared chapters (the next 3 are fetched, and their speech is made while charging). Builds on 0.5.0's Heat control
 > and 0.4.0's bundled fonts, stronger text contrast, chapter title narration and brightness controls.
 > See [the changelog](docs/CHANGELOG.md) for details.
 
@@ -66,6 +66,7 @@ What Android adds:
 - Direct fetching, and **Read in browser** for sites with bot protection: pass the check yourself, then read the page.
 - In-app and system brightness controls that stay in sync; keep-screen-on with `FLAG_KEEP_SCREEN_ON`; the back button is blocked while locked.
 - Voice models stored once on the phone.
+- **Prepared chapters:** the next 3 chapters are fetched in the background (open at once, readable offline), and their speech is made while the phone charges and you are not listening, so playing them needs almost no processor power. Older ones are deleted automatically; Settings → Prepare next chapters controls it.
 - **Books:** import an EPUB or PDF (Open tab, or "Open with PageWhisper" from a file manager). A book is added to the Library with its cover and chapters;
   Continue, the chapter list, previous/next, auto-next, highlight, pronunciation rules and the sleep timer all work on it. Books work offline and stay
   on the phone: they are not part of a backup.
