@@ -9,7 +9,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.res.painterResource
+import com.pagewhisper.app.R
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -134,6 +140,8 @@ fun AppRoot(vm: AppViewModel) {
 private fun TopBar() {
     val c = LocalPw.current
     Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Image(painterResource(R.drawable.ic_pw_logo), contentDescription = null, modifier = Modifier.size(30.dp), colorFilter = ColorFilter.tint(c.accent2))
+        Spacer(Modifier.width(8.dp))
         Text(
             buildAnnotatedString { append("Page"); withStyle(SpanStyle(color = c.accent2)) { append("Whisper") } },
             fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = c.text, modifier = Modifier.weight(1f),

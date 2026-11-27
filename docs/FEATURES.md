@@ -7,7 +7,7 @@ This file is the spec of the Android app's features: names, ranges, defaults and
 | Feature | Status |
 |---|---|
 | Fetch a chapter by link (reader service, direct, proxy) | Done (OkHttp + Jsoup) |
-| **Prepared chapters**: next 3 chapters fetched, speech made while charging, old ones deleted | Done (WorkManager; background job needs a phone to check) |
+| **Prepared chapters**: next 3 chapters fetched, speech made while not listening, old ones deleted | Done (WorkManager; background job needs a phone to check) |
 | **Books**: import EPUB and PDF into the library | Done (jsoup for EPUB, PDFBox for PDF; unit tested text rules) |
 | Paste, clipboard, import `.txt`, share-sheet input | Done |
 | Kokoro voices (28) and speed | Done (sherpa-onnx) |
@@ -409,9 +409,9 @@ The app prepares the chapters after the one being read, so they open at once, wo
 - Saved in the app's cache folder, one file per chapter.
 
 ### Speech
-- Made by a background job (WorkManager) that the system starts only while the phone is charging and the battery is not low. It starts 20 seconds after a chapter is opened and is replaced when another chapter is opened.
+- Made by a background job (WorkManager) that the system starts whether or not the phone is charging, as long as the battery is not low. It starts 20 seconds after a chapter is opened and is replaced when another chapter is opened.
 - It makes the speech section by section with the current voice, speed, chunk size and pronunciation rules, and saves it as 16-bit audio. A section is found again by voice, speed and its exact spoken text, so changing any of them makes new speech and never plays the wrong audio.
-- It waits while someone is listening (the player has the processor), and stops, to try again later, when the charger is unplugged or the phone reports heat.
+- It waits while someone is listening (the player has the processor), and stops, to try again later, when the phone reports heat. It also stops when the phone is not charging and the battery is under 30%.
 - The player uses saved speech for a section when it has it. Speech that the player makes itself is also saved, so replays and the previous chapter need no new work.
 
 ### Clean-up
@@ -421,7 +421,7 @@ The app prepares the chapters after the one being read, so they open at once, wo
 
 ### Acceptance checks
 - Saved samples read back within 0.0002 of the original; a section is found by voice, speed and text only (`PreparedTest`).
-- Not covered by tests (needs a phone): the background job, the charging condition and fetching ahead.
+- Not covered by tests (needs a phone): the background job, the battery and heat conditions and fetching ahead.
 
 ---
 ## Spec: Books (EPUB and PDF)

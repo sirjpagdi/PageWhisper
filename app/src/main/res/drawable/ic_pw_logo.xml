@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The PageWhisper logo shown in the header: a line drawing with no background. It is drawn in white and tinted with the accent color in the app. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="512dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group android:translateY="-23">
+        <path
+            android:pathData="M 136.5 195.8 L 140.5 187.2 Q 144.0 180.0 149.8 174.5 L 160.2 164.5 Q 166.0 159.0 173.7 161.3 L 202.3 169.7 Q 210.0 172.0 215.3 178.0 L 250.7 218.0 Q 256.0 224.0 261.3 218.0 L 296.7 178.0 Q 302.0 172.0 309.7 169.7 L 338.3 161.3 Q 346.0 159.0 351.7 164.7 L 362.3 175.3 Q 368.0 181.0 371.3 188.3 L 375.7 197.7 Q 379.0 205.0 371.0 204.6 L 330.0 202.4 Q 322.0 202.0 314.7 205.3 L 263.3 228.7 Q 256.0 232.0 248.7 228.7 L 197.3 205.3 Q 190.0 202.0 182.0 202.1 L 141.0 202.9 Q 133.0 203.0 136.5 195.8 Z"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="10"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+    <path
+        android:pathData="M 160.0 216.0 L 178.0 216.0 Q 188.0 216.0 192.9 224.7 L 217.1 267.3 Q 222.0 276.0 225.1 266.5 L 233.9 239.5 Q 237.0 230.0 247.0 230.0 L 265.0 230.0 Q 275.0 230.0 278.1 239.5 L 286.9 266.5 Q 290.0 276.0 294.9 267.3 L 319.1 224.7 Q 324.0 216.0 334.0 216.0 L 352.0 216.0 Q 362.0 216.0 358.1 225.2 L 317.9 318.8 Q 314.0 328.0 304.0 328.0 L 286.0 328.0 Q 276.0 328.0 272.2 318.8 L 259.8 289.2 Q 256.0 280.0 252.2 289.2 L 239.8 318.8 Q 236.0 328.0 226.0 328.0 L 208.0 328.0 Q 198.0 328.0 194.1 318.8 L 153.9 225.2 Q 150.0 216.0 160.0 216.0 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="12"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M103,264 a6,6 0 0 1 6,6 v10 a6,6 0 0 1 -6,6 a6,6 0 0 1 -6,-6 v-10 a6,6 0 0 1 6,-6 z M118,252 a6,6 0 0 1 6,6 v34 a6,6 0 0 1 -6,6 a6,6 0 0 1 -6,-6 v-34 a6,6 0 0 1 6,-6 z M134,239 a6,6 0 0 1 6,6 v60 a6,6 0 0 1 -6,6 a6,6 0 0 1 -6,-6 v-60 a6,6 0 0 1 6,-6 z M150,249 a6,6 0 0 1 6,6 v40 a6,6 0 0 1 -6,6 a6,6 0 0 1 -6,-6 v-40 a6,6 0 0 1 6,-6 z M362,249 a6,6 0 0 1 6,6 v40 a6,6 0 0 1 -6,6 a6,6 0 0 1 -6,-6 v-40 a6,6 0 0 1 6,-6 z M378,239 a6,6 0 0 1 6,6 v60 a6,6 0 0 1 -6,6 a6,6 0 0 1 -6,-6 v-60 a6,6 0 0 1 6,-6 z M393,252 a6,6 0 0 1 6,6 v34 a6,6 0 0 1 -6,6 a6,6 0 0 1 -6,-6 v-34 a6,6 0 0 1 6,-6 z M409,264 a6,6 0 0 1 6,6 v10 a6,6 0 0 1 -6,6 a6,6 0 0 1 -6,-6 v-10 a6,6 0 0 1 6,-6 z" />
+</vector>

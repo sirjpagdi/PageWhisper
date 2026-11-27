@@ -122,7 +122,7 @@ fun SettingsScreen(vm: AppViewModel) {
 
         PwCard("Prepare next chapters") {
             Segmented(listOf("off" to "Off", "text" to "Text", "audio" to "Text + speech"), s.prefetch) { v -> vm.setPrefetch(v) }
-            Hint("While you read, the next 3 chapters of a web novel are fetched in the background, so they open at once and can be read without a connection. With Text + speech, the speech for them is also made while the phone is charging and you are not listening; playing prepared speech needs almost no processor power, so the phone stays cool. Chapters more than 3 away from the one you are on are deleted automatically.")
+            Hint("While you read, the next 3 chapters of a web novel are fetched in the background, so they open at once and can be read without a connection. With Text + speech, the speech for them is also made, charging or not, while you are not listening (it waits while the player is running, pauses when the phone is hot, and stops when the battery is under 30%); playing prepared speech needs almost no processor power, so the phone stays cool. Chapters more than 3 away from the one you are on are deleted automatically.")
             SoftButton("Clear prepared chapters", { vm.clearPrepared() }, Modifier.fillMaxWidth())
         }
 

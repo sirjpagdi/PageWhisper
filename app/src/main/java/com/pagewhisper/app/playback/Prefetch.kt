@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Prepares the next chapters in the background. See FEATURES.md ("Spec: Prepared chapters").
  *  - Text: while the app is used, the next [AHEAD] chapters of a web novel are fetched, so they open at once and read offline.
- *  - Speech: while the phone charges and nobody is listening, the speech for those chapters is made and saved, so playing
+ *  - Speech: while nobody is listening (charging or not), the speech for those chapters is made and saved, so playing
  *    them needs almost no processor power.
  *  - Clean-up: chapters more than [AHEAD] away from the open one lose their saved text and speech.
  */
@@ -108,7 +108,7 @@ object Prefetch {
 
     fun scheduleAudio(ctx: Context) {
         val request = OneTimeWorkRequestBuilder<PrerenderWorker>()
-            .setConstraints(Constraints.Builder().setRequiresCharging(true).setRequiresBatteryNotLow(true).build())
+            .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
             .setInitialDelay(20, TimeUnit.SECONDS)
             .build()
         runCatching { WorkManager.getInstance(ctx.applicationContext).enqueueUniqueWork(WORK, ExistingWorkPolicy.REPLACE, request) }
@@ -126,10 +126,14 @@ object Prefetch {
         AudioCache.clear()
     }
 
-    private fun isCharging(ctx: Context): Boolean {
-        val i = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val s = i?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
-        return s == BatteryManager.BATTERY_STATUS_CHARGING || s == BatteryManager.BATTERY_STATUS_FULL
+    /** True when the phone is running on its battery and has less than 30% left: not the time to make speech ahead. */
+    private fun lowBattery(ctx: Context): Boolean {
+        val i = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return false
+        val status = i.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+        if (status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL) return false
+        val level = i.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = i.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        return scale > 0 && level >= 0 && level * 100 / scale < 30
     }
 
     private fun textOf(url: String): Pair<String, String>? =
@@ -145,7 +149,7 @@ object Prefetch {
 
     /**
      * Makes and saves the speech of the chapters ahead of the last opened one. Pauses while someone is listening, and
-     * stops (to be tried again later) when the charger is unplugged or the phone gets hot. True when there is nothing
+     * stops (to be tried again later) when the phone gets hot, and stops when the battery is below 30% and not charging. True when there is nothing
      * more to do now.
      */
     suspend fun renderAhead(ctx: Context): Boolean {
@@ -161,7 +165,8 @@ object Prefetch {
                 val key = AudioCache.key(sid, rate, sec.speech)
                 if (AudioCache.has(u, key)) continue
                 while (true) {
-                    if (!isCharging(ctx) || Playback.isHot()) return false
+                    if (Playback.isHot()) return false // try again once it has cooled
+                    if (lowBattery(ctx)) return true
                     if (!Playback.isBusy()) break
                     delay(10_000) // someone is listening: leave the processor to the player
                 }
@@ -174,7 +179,7 @@ object Prefetch {
     }
 }
 
-/** Runs [Prefetch.renderAhead] when the phone is charging (the system decides the moment). */
+/** Runs [Prefetch.renderAhead] in the background (the system decides the moment, and skips it when the battery is low). */
 class PrerenderWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result = try {
         if (Prefetch.renderAhead(applicationContext)) Result.success() else Result.retry()
