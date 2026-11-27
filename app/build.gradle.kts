@@ -13,8 +13,8 @@ android {
         applicationId = "com.pagewhisper.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "0.6.0"
+        versionCode = 7
+        versionName = "0.7.0"
         // Most phones are arm64. Remove this line to also build for x86 emulators (a bigger APK).
         ndk { abiFilters += "arm64-v8a" }
     }

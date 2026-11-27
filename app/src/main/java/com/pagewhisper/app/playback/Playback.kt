@@ -20,7 +20,7 @@ import com.pagewhisper.app.model.Section
 import com.pagewhisper.app.text.TextTools
 import com.pagewhisper.app.tts.EngineHolder
 import com.pagewhisper.app.tts.ModelStore
-import com.pagewhisper.app.tts.Voices
+import com.pagewhisper.app.tts.speechChoiceOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -114,6 +114,7 @@ object Playback {
     fun init(application: Application) {
         app = application
         EngineHolder.modeProvider = { Repo.settings.value.heat }
+        EngineHolder.engineProvider = { Repo.settings.value.engine }
         registerThermal()
     }
 
@@ -254,7 +255,7 @@ object Playback {
             .build()
 
     private suspend fun runPlayback(start: Int, run: Int) = coroutineScope {
-        if (!ModelStore.isReady(app)) throw IllegalStateException("MODEL_MISSING")
+        if (ModelStore.active(app, Repo.settings.value.engine) == null) throw IllegalStateException("MODEL_MISSING")
         val engine = EngineHolder.get(app)
         if (run != runId) return@coroutineScope
         val sr = engine.sampleRate
@@ -290,15 +291,16 @@ object Playback {
                     val sec = sections.getOrNull(i) ?: break
                     val settings = Repo.settings.value
                     val began = SystemClock.elapsedRealtime()
-                    val sid = Voices.sidOf(settings.voice)
+                    val choice = speechChoiceOf(settings)
+                    val sid = choice.sid
                     val rate = settings.rate.toFloat()
                     // Speech that was prepared earlier (or made when this chapter was played before) costs no processor power.
-                    val cacheKey = if (sec.speech.isBlank() || chapterUrl.isEmpty() || settings.prefetch == "off") "" else AudioCache.key(sid, rate, sec.speech)
+                    val cacheKey = if (sec.speech.isBlank() || chapterUrl.isEmpty() || settings.prefetch == "off") "" else AudioCache.key(choice.tag, sid, rate, sec.speech)
                     val cached = if (cacheKey.isEmpty()) null else AudioCache.get(chapterUrl, cacheKey)
                     val pcm = when {
                         sec.speech.isBlank() -> FloatArray(0)
                         cached != null -> cached
-                        else -> EngineHolder.generate(app, sec.speech, sid, rate).also {
+                        else -> EngineHolder.generate(app, sec.speech, sid, rate, choice.lang).also {
                             if (cacheKey.isNotEmpty() && it.isNotEmpty()) AudioCache.put(chapterUrl, cacheKey, it)
                         }
                     }
@@ -407,7 +409,8 @@ object Playback {
         val st = Repo.settings.value
         val engine = EngineHolder.get(app)
         val sr = engine.sampleRate
-        val pcm = EngineHolder.generate(app, spoken, Voices.sidOf(st.voice), st.rate.toFloat())
+        val choice = speechChoiceOf(st)
+        val pcm = EngineHolder.generate(app, spoken, choice.sid, st.rate.toFloat(), choice.lang)
         if (pcm.isEmpty()) throw IllegalStateException("The voice returned no audio.")
         requestFocus()
         try {

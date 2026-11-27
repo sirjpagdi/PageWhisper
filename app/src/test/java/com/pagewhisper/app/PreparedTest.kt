@@ -20,11 +20,13 @@ class PreparedTest {
         assertEquals(-1f, back[1], 0.001f)
     }
 
-    @Test fun aSectionIsFoundByVoiceSpeedAndText() {
-        val k = AudioCache.key(3, 1.35f, "Hello there.")
-        assertEquals(k, AudioCache.key(3, 1.35f, "Hello there."))
-        assertNotEquals(k, AudioCache.key(4, 1.35f, "Hello there."))
-        assertNotEquals(k, AudioCache.key(3, 1.0f, "Hello there."))
-        assertNotEquals(k, AudioCache.key(3, 1.35f, "Hello there!"))
+    @Test fun aSectionIsFoundByEngineVoiceSpeedAndText() {
+        val k = AudioCache.key("k", 3, 1.35f, "Hello there.")
+        assertEquals(k, AudioCache.key("k", 3, 1.35f, "Hello there."))
+        assertNotEquals(k, AudioCache.key("k", 4, 1.35f, "Hello there."))
+        assertNotEquals(k, AudioCache.key("k", 3, 1.0f, "Hello there."))
+        assertNotEquals(k, AudioCache.key("k", 3, 1.35f, "Hello there!"))
+        assertNotEquals(k, AudioCache.key("s-en", 3, 1.35f, "Hello there.")) // another engine, same speaker number
+        assertNotEquals(AudioCache.key("s-en", 3, 1.35f, "Hello."), AudioCache.key("s-fr", 3, 1.35f, "Hello."))
     }
 }

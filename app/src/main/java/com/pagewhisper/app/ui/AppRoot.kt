@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.res.painterResource
 import com.pagewhisper.app.R
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.height
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -140,7 +141,7 @@ fun AppRoot(vm: AppViewModel) {
 private fun TopBar() {
     val c = LocalPw.current
     Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Image(painterResource(R.drawable.ic_pw_logo), contentDescription = null, modifier = Modifier.size(30.dp), colorFilter = ColorFilter.tint(c.accent2))
+        Image(painterResource(R.drawable.ic_pw_logo), contentDescription = null, modifier = Modifier.height(26.dp), colorFilter = ColorFilter.tint(c.accent2))
         Spacer(Modifier.width(8.dp))
         Text(
             buildAnnotatedString { append("Page"); withStyle(SpanStyle(color = c.accent2)) { append("Whisper") } },

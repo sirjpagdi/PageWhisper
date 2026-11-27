@@ -58,7 +58,8 @@ sealed interface Sheet {
 
 data class ChapterState(val title: String, val url: String, val text: String, val next: String)
 data class Status(val text: String = "", val error: Boolean = false, val busy: Boolean = false)
-data class ModelUi(val ready: Boolean, val downloading: Boolean = false, val progress: Float = 0f, val error: String = "")
+/** Which voice models are installed, and which one is downloading (its id, or empty). */
+data class ModelUi(val kokoro: Boolean, val supertonic: Boolean, val downloading: String = "", val progress: Float = 0f, val error: String = "")
 data class RestoreUi(val backup: CleanBackup, val summary: String)
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -79,7 +80,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val tocStatus = MutableStateFlow(Status())
     val pronStatus = MutableStateFlow(Status())
     val backupStatus = MutableStateFlow(Status())
-    val model = MutableStateFlow(ModelUi(ModelStore.isReady(app)))
+    val model = MutableStateFlow(ModelUi(ModelStore.isReady(app, ModelStore.STANDARD), ModelStore.isReady(app, ModelStore.SUPERTONIC)))
     val restore = MutableStateFlow<RestoreUi?>(null)
     /** The address open in the in-app browser (used for sites that block automatic fetching), or null. */
     val browser = MutableStateFlow<String?>(null)
@@ -587,19 +588,36 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ================= voice model =================
 
-    fun downloadModel() {
-        if (model.value.downloading) return
+    private fun installed(error: String = "") =
+        ModelUi(ModelStore.isReady(ctx, ModelStore.STANDARD), ModelStore.isReady(ctx, ModelStore.SUPERTONIC), error = error)
+
+    fun downloadModel(id: String) {
+        if (model.value.downloading.isNotEmpty()) return
+        val bundle = ModelStore.ALL.firstOrNull { it.id == id } ?: return
         viewModelScope.launch {
-            model.value = ModelUi(ready = false, downloading = true)
+            model.value = installed().copy(downloading = bundle.id)
             try {
-                ModelStore.download(ctx, ModelStore.STANDARD) { done, total ->
-                    model.value = ModelUi(ready = false, downloading = true, progress = if (total > 0) done.toFloat() / total else 0f)
+                ModelStore.download(ctx, bundle) { done, total ->
+                    model.value = installed().copy(downloading = bundle.id, progress = if (total > 0) done.toFloat() / total else 0f)
                 }
-                model.value = ModelUi(ready = ModelStore.isReady(ctx))
+                model.value = installed()
             } catch (e: Throwable) {
-                model.value = ModelUi(ready = ModelStore.isReady(ctx), error = e.message ?: "Download failed")
+                model.value = installed(e.message ?: "Download failed")
             }
         }
+    }
+
+    /** Frees the space of a voice model that is not the one in use. */
+    fun deleteModel(id: String) {
+        val bundle = ModelStore.ALL.firstOrNull { it.id == id } ?: return
+        if (model.value.downloading.isNotEmpty() || bundle.engine == Repo.settings.value.engine) return
+        ModelStore.delete(ctx, bundle)
+        model.value = installed()
+    }
+
+    /** Shows or hides a voice or language in the lists (see [com.pagewhisper.app.tts.Supertonic] for the ids). */
+    fun toggleHidden(id: String) {
+        update { st -> st.copy(hiddenVoices = if (id in st.hiddenVoices) st.hiddenVoices - id else st.hiddenVoices + id) }
     }
 
     // ================= saved chapters =================

@@ -3,45 +3,68 @@ package com.pagewhisper.app.tts
 import android.content.Context
 import android.os.Process
 import java.io.File
+import com.k2fsa.sherpa.onnx.GenerationConfig
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsKokoroModelConfig
 import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsSupertonicModelConfig
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 /**
- * Kokoro through sherpa-onnx. If a parameter name below does not compile, Ctrl+click OfflineTts in the AAR
- * and match its current constructor (the same note as in the spike project).
+ * Kokoro or Supertonic through sherpa-onnx (the bundle says which). Supertonic needs a sherpa-onnx AAR of version 1.13.2
+ * or newer. If a parameter name below does not compile, Ctrl+click OfflineTts in the AAR and match its current constructor.
  */
 class SherpaEngine(ctx: Context, val threads: Int, val background: Boolean, val bundle: ModelBundle) {
     private val tts: OfflineTts
     val sampleRate: Int
+    private val supertonic = bundle.engine == "supertonic"
 
     init {
         val dir = ModelStore.dir(ctx, bundle)
         val d = dir.absolutePath
-        // Only name the optional files the bundle really has.
-        val lexicons = listOf("lexicon-us-en.txt", "lexicon-zh.txt").filter { File(dir, it).exists() }.joinToString(",") { "$d/$it" }
-        val kokoro = OfflineTtsKokoroModelConfig(
-            model = "$d/${bundle.modelFile}",
-            voices = "$d/voices.bin",
-            tokens = "$d/tokens.txt",
-            dataDir = "$d/espeak-ng-data",
-            dictDir = if (File(dir, "dict").isDirectory) "$d/dict" else "",
-            lexicon = lexicons,
-            lang = "en-us",
-        )
-        val config = OfflineTtsConfig(
-            model = OfflineTtsModelConfig(kokoro = kokoro, numThreads = threads, debug = false, provider = "cpu"),
-            maxNumSentences = 1,
-        )
-        tts = OfflineTts(config = config)
+        val model = if (supertonic) {
+            OfflineTtsModelConfig(
+                supertonic = OfflineTtsSupertonicModelConfig(
+                    durationPredictor = "$d/duration_predictor.int8.onnx",
+                    textEncoder = "$d/text_encoder.int8.onnx",
+                    vectorEstimator = "$d/vector_estimator.int8.onnx",
+                    vocoder = "$d/vocoder.int8.onnx",
+                    ttsJson = "$d/tts.json",
+                    unicodeIndexer = "$d/unicode_indexer.bin",
+                    voiceStyle = "$d/voice.bin",
+                ),
+                numThreads = threads, debug = false, provider = "cpu",
+            )
+        } else {
+            // Only name the optional files the bundle really has.
+            val lexicons = listOf("lexicon-us-en.txt", "lexicon-zh.txt").filter { File(dir, it).exists() }.joinToString(",") { "$d/$it" }
+            OfflineTtsModelConfig(
+                kokoro = OfflineTtsKokoroModelConfig(
+                    model = "$d/${bundle.modelFile}",
+                    voices = "$d/voices.bin",
+                    tokens = "$d/tokens.txt",
+                    dataDir = "$d/espeak-ng-data",
+                    dictDir = if (File(dir, "dict").isDirectory) "$d/dict" else "",
+                    lexicon = lexicons,
+                    lang = "en-us",
+                ),
+                numThreads = threads, debug = false, provider = "cpu",
+            )
+        }
+        tts = OfflineTts(config = OfflineTtsConfig(model = model, maxNumSentences = 1))
         sampleRate = tts.sampleRate()
     }
 
-    fun generate(text: String, sid: Int, speed: Float): FloatArray = tts.generate(text = text, sid = sid, speed = speed).samples
+    /** [lang] is the Supertonic language code (such as "en"); Kokoro ignores it. */
+    fun generate(text: String, sid: Int, speed: Float, lang: String = ""): FloatArray =
+        if (supertonic) {
+            tts.generateWithConfig(text, GenerationConfig(speed = speed, sid = sid, extra = mapOf("lang" to lang.ifEmpty { "en" }))).samples
+        } else {
+            tts.generate(text = text, sid = sid, speed = speed).samples
+        }
 
     fun release() = tts.release()
 }
@@ -65,8 +88,9 @@ object EngineHolder {
     private val ORDER = listOf("cool", "balanced", "fast")
     private val maxThreads = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(2, 3)
 
-    /** Where the chosen profile comes from (set by Playback). */
+    /** Where the chosen profile and the chosen voice engine come from (set by Playback). */
     @Volatile var modeProvider: () -> String = { "cool" }
+    @Volatile var engineProvider: () -> String = { "kokoro" }
     @Volatile private var mode = "cool"
     @Volatile private var escalation = 0
     @Volatile private var urgent = false
@@ -101,7 +125,7 @@ object EngineHolder {
         val m = currentMode()
         val threads = wantThreads(m)
         val bg = m == "cool"
-        val bundle = ModelStore.active(ctx) ?: throw IllegalStateException("MODEL_MISSING")
+        val bundle = ModelStore.active(ctx, engineProvider()) ?: throw IllegalStateException("MODEL_MISSING")
         val current = engine
         if (current != null) {
             val sameModel = current.bundle.id == bundle.id
@@ -121,8 +145,8 @@ object EngineHolder {
 
     suspend fun get(ctx: Context): SherpaEngine = withContext(dispatcher) { ensure(ctx) }
 
-    suspend fun generate(ctx: Context, text: String, sid: Int, speed: Float): FloatArray =
-        withContext(dispatcher) { ensure(ctx).generate(text, sid, speed) }
+    suspend fun generate(ctx: Context, text: String, sid: Int, speed: Float, lang: String = ""): FloatArray =
+        withContext(dispatcher) { ensure(ctx).generate(text, sid, speed, lang) }
 
     fun release() {
         engine?.release()

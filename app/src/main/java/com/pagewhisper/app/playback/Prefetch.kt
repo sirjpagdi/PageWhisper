@@ -23,7 +23,7 @@ import com.pagewhisper.app.text.PronEngine
 import com.pagewhisper.app.text.TextTools
 import com.pagewhisper.app.tts.EngineHolder
 import com.pagewhisper.app.tts.ModelStore
-import com.pagewhisper.app.tts.Voices
+import com.pagewhisper.app.tts.speechChoiceOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -154,15 +154,16 @@ object Prefetch {
      */
     suspend fun renderAhead(ctx: Context): Boolean {
         val last = Repo.loadLast() ?: return true
-        if (last.url.isEmpty() || Repo.settings.value.prefetch != "audio" || ModelStore.active(ctx) == null) return true
+        if (last.url.isEmpty() || Repo.settings.value.prefetch != "audio" || ModelStore.active(ctx, Repo.settings.value.engine) == null) return true
         for (u in ahead(last.url, last.next)) {
             val (title, text) = textOf(u) ?: return true
             for (sec in sectionsFor(u, title, text)) {
                 if (sec.speech.isBlank()) continue
                 val settings = Repo.settings.value
-                val sid = Voices.sidOf(settings.voice)
+                val choice = speechChoiceOf(settings)
+                val sid = choice.sid
                 val rate = settings.rate.toFloat()
-                val key = AudioCache.key(sid, rate, sec.speech)
+                val key = AudioCache.key(choice.tag, sid, rate, sec.speech)
                 if (AudioCache.has(u, key)) continue
                 while (true) {
                     if (Playback.isHot()) return false // try again once it has cooled
@@ -170,7 +171,7 @@ object Prefetch {
                     if (!Playback.isBusy()) break
                     delay(10_000) // someone is listening: leave the processor to the player
                 }
-                val pcm = EngineHolder.generate(ctx, sec.speech, sid, rate)
+                val pcm = EngineHolder.generate(ctx, sec.speech, sid, rate, choice.lang)
                 if (pcm.isNotEmpty()) AudioCache.put(u, key, pcm)
                 if (Repo.settings.value.prefetch != "audio") return true
             }

@@ -19,6 +19,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.TextButton
+import com.pagewhisper.app.tts.Supertonic
+import com.pagewhisper.app.tts.Visible
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.LinearProgressIndicator
@@ -78,6 +83,8 @@ fun SettingsScreen(vm: AppViewModel) {
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri -> if (uri != null) vm.exportBackup(uri) }
     val import = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) vm.readBackup(uri) }
     var voiceMenu by remember { mutableStateOf(false) }
+    var langMenu by remember { mutableStateOf(false) }
+    var manageVoices by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
         PwCard("Reading style") {
@@ -87,13 +94,34 @@ fun SettingsScreen(vm: AppViewModel) {
         }
 
         PwCard("Voice") {
-            Label("Voice")
-            Box {
-                SoftButton(Voices.labelOf(s.voice), { voiceMenu = true }, Modifier.fillMaxWidth())
-                DropdownMenu(voiceMenu, { voiceMenu = false }) {
-                    for (v in Voices.all) DropdownMenuItem(text = { Text(v.label) }, onClick = { vm.update { st -> st.copy(voice = v.id) }; voiceMenu = false })
+            Label("Voice engine")
+            Segmented(listOf("kokoro" to "Kokoro", "supertonic" to "Supertonic"), s.engine) { v -> vm.update { it.copy(engine = v) } }
+            Hint(if (s.engine == "supertonic") "Supertonic 3: 10 voices, 31 languages. It has its own model (see Voice model below), so download it once. A change applies from the next section." else "Kokoro: 28 English voices. A change applies from the next section.")
+            if (s.engine == "supertonic") {
+                Label("Voice")
+                Box {
+                    SoftButton(Supertonic.voiceLabel(s.stVoice), { voiceMenu = true }, Modifier.fillMaxWidth())
+                    DropdownMenu(voiceMenu, { voiceMenu = false }) {
+                        for (v in Visible.supertonicVoices(s.hiddenVoices)) DropdownMenuItem(text = { Text(v.label) }, onClick = { vm.update { st -> st.copy(stVoice = v.sid) }; voiceMenu = false })
+                    }
+                }
+                Label("Language of the text")
+                Box {
+                    SoftButton(Supertonic.languageName(s.stLang), { langMenu = true }, Modifier.fillMaxWidth())
+                    DropdownMenu(langMenu, { langMenu = false }) {
+                        for (l in Visible.languages(s.hiddenVoices)) DropdownMenuItem(text = { Text(l.name) }, onClick = { vm.update { st -> st.copy(stLang = l.code) }; langMenu = false })
+                    }
+                }
+            } else {
+                Label("Voice")
+                Box {
+                    SoftButton(Voices.labelOf(s.voice), { voiceMenu = true }, Modifier.fillMaxWidth())
+                    DropdownMenu(voiceMenu, { voiceMenu = false }) {
+                        for (v in Visible.kokoro(s.hiddenVoices)) DropdownMenuItem(text = { Text(v.label) }, onClick = { vm.update { st -> st.copy(voice = v.id) }; voiceMenu = false })
+                    }
                 }
             }
+            SoftButton("Choose which voices to show", { manageVoices = true }, Modifier.fillMaxWidth())
             SliderRow("Speech speed", s.rate.toFloat(), 0.7f..1.4f, 13, "%.2f×".format(s.rate)) { v -> vm.update { it.copy(rate = ((v * 20).toInt() / 20.0)) } }
             Label("Chunk size")
             Segmented(listOf("160" to "Short", "280" to "Balanced", "380" to "Long"), s.chunk.toString()) { v ->
@@ -106,19 +134,28 @@ fun SettingsScreen(vm: AppViewModel) {
         }
 
         PwCard("Voice model") {
+            val bundle = ModelStore.forEngine(s.engine)
+            val ready = if (bundle.engine == "supertonic") model.supertonic else model.kokoro
+            val other = ModelStore.ALL.first { it.id != bundle.id }
+            val otherReady = if (other.engine == "supertonic") model.supertonic else model.kokoro
             when {
-                model.downloading -> {
+                model.downloading == bundle.id -> {
                     LinearProgressIndicator(progress = { model.progress }, Modifier.fillMaxWidth(), color = c.accent, trackColor = c.line)
                     Text("Downloading… ${(model.progress * 100).toInt()}% (keep the app open)", fontSize = 12.sp, color = c.muted)
                 }
-                model.ready -> Text("Installed. Speech is made on this phone and works offline.", fontSize = 13.sp, color = c.green)
+                ready -> {
+                    Text("${bundle.title} is installed. Speech is made on this phone and works offline.", fontSize = 13.sp, color = c.green)
+                    if (otherReady) SoftButton("Remove the ${other.title} model to free space", { vm.deleteModel(other.id) }, Modifier.fillMaxWidth(), enabled = model.downloading.isEmpty())
+                }
                 else -> {
-                    PrimaryButton("Download the voice model (${ModelStore.STANDARD.size})", { vm.downloadModel() }, Modifier.fillMaxWidth())
+                    PrimaryButton("Download the ${bundle.title} model (${bundle.size})", { vm.downloadModel(bundle.id) }, Modifier.fillMaxWidth(), enabled = model.downloading.isEmpty())
                     StatusText(model.error, true)
-                    Hint("Needed once; use Wi-Fi. The model is stored on this phone and reading works offline afterwards.")
+                    Hint("Needed once for this voice engine; use Wi-Fi. The model is stored on this phone and reading works offline afterwards." + if (bundle.engine == "supertonic") " Supertonic needs a sherpa-onnx library of version 1.13.2 or newer inside the app." else "")
                 }
             }
         }
+
+        if (manageVoices) VoiceManagerDialog(s.hiddenVoices, { vm.toggleHidden(it) }) { manageVoices = false }
 
         PwCard("Prepare next chapters") {
             Segmented(listOf("off" to "Off", "text" to "Text", "audio" to "Text + speech"), s.prefetch) { v -> vm.setPrefetch(v) }
@@ -179,7 +216,7 @@ fun SettingsScreen(vm: AppViewModel) {
             Hint("No account, no ads, no tracking and no server of ours. Your library, imported books, saved chapters, pronunciation rules and settings stay on this phone. Imported books are not part of backups. The only things that leave it are the chapter links you choose to fetch and the one-time voice model download.")
 
             Label("Voice")
-            Hint("28 Kokoro voices, speech made on-device by sherpa-onnx. After the one-time voice model download, reading works fully offline. Speech is generated a little ahead of the audio, on as few and as efficient processor cores as it can keep up with, and slows down by itself if the phone reports heat. Cool is the default heat setting; longer chunks run cooler than shorter ones.")
+            Hint("Two voice engines: Kokoro (28 English voices) and Supertonic 3 (10 voices, 31 languages). Speech is made on-device by sherpa-onnx, and you can hide the voices and languages you do not want. After the one-time voice model download, reading works fully offline. Speech is generated a little ahead of the audio, on as few and as efficient processor cores as it can keep up with, and slows down by itself if the phone reports heat. Cool is the default heat setting; longer chunks run cooler than shorter ones.")
 
             Label("Reading")
             Hint("Four themes, thirteen reading fonts, adjustable size, spacing, alignment and highlight style. Each chapter is announced by its number and title before the text begins.")
@@ -191,4 +228,40 @@ fun SettingsScreen(vm: AppViewModel) {
             Hint("For listening with the screen off, set this app's battery usage to Unrestricted. Back up from this screen now and then.")
         }
     }
+}
+
+/** Tick the voices and languages that should appear in the lists; untick the ones that should not. Nothing is deleted. */
+@Composable
+private fun VoiceManagerDialog(hidden: List<String>, onToggle: (String) -> Unit, onClose: () -> Unit) {
+    val c = LocalPw.current
+    @Composable
+    fun VoiceRow(label: String, id: String, shown: Boolean, onlyOne: Boolean) {
+        val enabled = !(shown && onlyOne) // always keep at least one in each list
+        Row(
+            Modifier.fillMaxWidth().clickable(enabled = enabled) { onToggle(id) },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(checked = shown, onCheckedChange = { onToggle(id) }, enabled = enabled)
+            Text(label, fontSize = 14.sp, color = if (shown) c.text else c.muted)
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onClose,
+        confirmButton = { TextButton(onClick = onClose) { Text("Done") } },
+        title = { Text("Voices to show") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text("Untick what you do not want in the lists. Nothing is deleted; tick it again any time. At least one stays in each list.", fontSize = 12.sp, color = c.muted)
+                Text("Kokoro voices", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = c.text, modifier = Modifier.padding(top = 10.dp))
+                val kokoroShown = Visible.kokoro(hidden).size
+                for (v in Voices.all) VoiceRow(v.label, v.id, v.id !in hidden, kokoroShown <= 1)
+                Text("Supertonic voices", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = c.text, modifier = Modifier.padding(top = 10.dp))
+                val stShown = Visible.supertonicVoices(hidden).size
+                for (v in Supertonic.voices) VoiceRow(v.label, v.id, v.id !in hidden, stShown <= 1)
+                Text("Supertonic languages", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = c.text, modifier = Modifier.padding(top = 10.dp))
+                val langShown = Visible.languages(hidden).size
+                for (l in Supertonic.languages) VoiceRow(l.name, Supertonic.languageId(l.code), Supertonic.languageId(l.code) !in hidden, langShown <= 1)
+            }
+        },
+    )
 }

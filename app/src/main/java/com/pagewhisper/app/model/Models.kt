@@ -1,5 +1,6 @@
 package com.pagewhisper.app.model
 
+import com.pagewhisper.app.tts.Supertonic
 import kotlinx.serialization.Serializable
 
 /** One pronunciation rule. See FEATURES.md ("Spec: Pronunciation rules"). */
@@ -99,6 +100,10 @@ data class AppSettings(
     val sleepLast: Int = 0,
     val heat: String = "cool",
     val prefetch: String = "audio",
+    val engine: String = "kokoro",
+    val stVoice: Int = 0,
+    val stLang: String = "en",
+    val hiddenVoices: List<String> = emptyList(),
 ) {
     fun sanitized(): AppSettings = AppSettings(
         voice = voice,
@@ -111,11 +116,16 @@ data class AppSettings(
         sleepLast = if (sleepLast in 1..600) sleepLast else 0,
         heat = if (heat in HEAT_MODES) heat else "cool",
         prefetch = if (prefetch in PREFETCH_MODES) prefetch else "audio",
+        engine = if (engine in ENGINES) engine else "kokoro",
+        stVoice = stVoice.coerceIn(0, 9),
+        stLang = if (Supertonic.languages.any { it.code == stLang }) stLang else "en",
+        hiddenVoices = hiddenVoices.distinct(),
     )
 
     companion object {
         val HEAT_MODES = listOf("fast", "balanced", "cool")
         val PREFETCH_MODES = listOf("off", "text", "audio")
+        val ENGINES = listOf("kokoro", "supertonic")
         val AMBIENT_KEYS = listOf("off", "rain", "heavy", "storm", "ocean", "insects", "forest", "wind", "fire", "brown")
     }
 }

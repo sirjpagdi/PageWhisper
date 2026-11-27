@@ -7,6 +7,7 @@ This file is the spec of the Android app's features: names, ranges, defaults and
 | Feature | Status |
 |---|---|
 | Fetch a chapter by link (reader service, direct, proxy) | Done (OkHttp + Jsoup) |
+| **Supertonic 3 voice engine** (10 voices, 31 languages) and hiding voices | Done (needs a phone to check the sound and speed) |
 | **Prepared chapters**: next 3 chapters fetched, speech made while not listening, old ones deleted | Done (WorkManager; background job needs a phone to check) |
 | **Books**: import EPUB and PDF into the library | Done (jsoup for EPUB, PDFBox for PDF; unit tested text rules) |
 | Paste, clipboard, import `.txt`, share-sheet input | Done |
@@ -393,6 +394,31 @@ Test vectors: `shared-tests.json` -> `backupMerge`. Both apps must produce the s
 
 ---
 
+## Spec: Voices and engines
+
+Two voice engines run through sherpa-onnx; the person picks one in Settings → Voice.
+
+### Engines
+- **Kokoro** (default): the full-precision multilingual model (about 350 MB); the app offers its 28 English voices.
+- **Supertonic 3**: the int8 package that sherpa-onnx publishes (`sherpa-onnx-supertonic-3-tts-int8-2026-05-11`, about 150 MB): 10 voices (Female 1 to 5, Male 1 to 5; speakers 0 to 9) and 31 languages. The language of the text is chosen separately and sent with every request.
+- Each engine has its own model, downloaded once from Settings → Voice model, kept on the phone and usable offline. A model that is not the one in use can be removed to free space.
+- Supertonic needs a sherpa-onnx AAR of version 1.13.2 or newer in `app/libs`.
+- The audio of the two engines has different sample rates; the player always uses the rate the engine reports. Saved speech is keyed by engine, language, speaker, speed and text, so it is never mixed up.
+- Switching engine, voice or language applies from the next section. Heat control, chunk size, speed, preparing chapters and pronunciation rules work for both.
+
+### Hiding voices and languages
+- Settings → Voice → "Choose which voices to show": a list of ticks for the 28 Kokoro voices, the 10 Supertonic voices and the 31 Supertonic languages. Unticked ones disappear from the lists; nothing is deleted and they can be ticked again at any time.
+- At least one item stays ticked in each list. A voice that is chosen but hidden keeps working until another is picked.
+- Stored in the settings as ids: a Kokoro voice is its name, a Supertonic voice is `st:<speaker>`, a language is `lang:<code>`. Not part of backups.
+
+### Languages (Supertonic)
+Arabic ar, Bulgarian bg, Croatian hr, Czech cs, Danish da, Dutch nl, English en, Estonian et, Finnish fi, French fr, German de, Greek el, Hindi hi, Hungarian hu, Indonesian id, Italian it, Japanese ja, Korean ko, Latvian lv, Lithuanian lt, Polish pl, Portuguese pt, Romanian ro, Russian ru, Slovak sk, Slovenian sl, Spanish es, Swedish sv, Turkish tr, Ukrainian uk, Vietnamese vi.
+
+### Acceptance checks
+- 28, 10 and 31 entries; hidden ids leave the lists; the choice follows the engine; bad settings are repaired; saved speech keys differ by engine and language (`VoiceCatalogTest`, `PreparedTest`).
+- Not covered by tests (needs a phone): downloading and loading the Supertonic model, how the voices sound, speed on a real phone.
+
+---
 ## Spec: Prepared chapters
 
 The app prepares the chapters after the one being read, so they open at once, work without a connection, and play without making the phone work hard.

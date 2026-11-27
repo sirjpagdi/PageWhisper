@@ -3,8 +3,9 @@
 A native Android reader that speaks web novel chapters, EPUB books and PDF books with Kokoro voices that run **on your phone**. Kotlin and Jetpack Compose, no WebView in
 the app's own screens, no account, no server. `FEATURES.md` holds the spec of its features.
 
-> **0.6.0:** import **EPUB** and **PDF** books into the library and have them read aloud, chapter by chapter, and prepared chapters (the next 3 are fetched, and their speech is made while you are not listening). Builds on 0.5.0's Heat control
-> and 0.4.0's bundled fonts, stronger text contrast, chapter title narration and brightness controls.
+> **0.7.0:** a second voice engine, **Supertonic 3** (10 voices, 31 languages), next to Kokoro; voices and languages you do not like can be hidden;
+> speech is prepared ahead whether or not the phone is charging; the header shows the logo. Builds on 0.6.0's EPUB and PDF books and prepared
+> chapters, 0.5.0's Heat control, and 0.4.0's bundled fonts, stronger text contrast, chapter title narration and brightness controls.
 > See [the changelog](docs/CHANGELOG.md) for details.
 
 ## Getting started
@@ -65,7 +66,7 @@ What Android adds:
 - Several CPU threads for speech, with a heat control (Fast, Balanced, Cool).
 - Direct fetching, and **Read in browser** for sites with bot protection: pass the check yourself, then read the page.
 - In-app and system brightness controls that stay in sync; keep-screen-on with `FLAG_KEEP_SCREEN_ON`; the back button is blocked while locked.
-- Voice models stored once on the phone.
+- Voice models stored once on the phone. Two voice engines: Kokoro (28 English voices) and **Supertonic 3** (10 voices, 31 languages; needs a sherpa-onnx AAR of version 1.13.2 or newer). Voices and languages you do not like can be hidden from the lists (Settings → Voice).
 - **Prepared chapters:** the next 3 chapters are fetched in the background (open at once, readable offline), and their speech is made while you are not listening (charging or not), so playing them needs almost no processor power. Older ones are deleted automatically; Settings → Prepare next chapters controls it.
 - **Books:** import an EPUB or PDF (Open tab, or "Open with PageWhisper" from a file manager). A book is added to the Library with its cover and chapters;
   Continue, the chapter list, previous/next, auto-next, highlight, pronunciation rules and the sleep timer all work on it. Books work offline and stay

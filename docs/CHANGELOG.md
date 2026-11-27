@@ -1,5 +1,19 @@
 # Android changelog
 
+## 0.7.0
+- **Supertonic 3 voice engine** beside Kokoro (Settings → Voice → Voice engine): 10 voices and 31 languages, the language chosen separately. It has
+  its own model download (about 150 MB, the int8 package from sherpa-onnx), kept on the phone and usable offline, and an unused model can be
+  removed from the same card. Needs a sherpa-onnx AAR of version 1.13.2 or newer. Heat control, chunk size, speed, prepared chapters and
+  pronunciation rules work with both engines. Saved speech is keyed by engine and language, so it is never mixed up.
+- **Hide voices and languages** you do not want: Settings → Voice → Choose which voices to show. Ticks for the 28 Kokoro voices, the 10 Supertonic
+  voices and the 31 languages; nothing is deleted and they can be brought back; at least one stays in each list.
+- **Speech is prepared whether or not the phone is charging.** It still waits while you are listening, pauses when the phone is hot, and stops
+  under 30% battery when not charging (the system also skips it when the battery is low).
+- **Header logo:** the PageWhisper logo sits beside the name, with no background, in the accent color of the chosen theme. The drawing fills its
+  box (the empty margin is cropped) and is 26 dp tall.
+- Tests for the voice lists, hiding, the engine choice and saved-speech keys (`VoiceCatalogTest`, `PreparedTest`).
+- versionCode 7, versionName 0.7.0.
+
 ## 0.6.0
 - **EPUB and PDF books.** Open → Import a book, or "Open with PageWhisper" from a file manager. The book is added to the Library with its
   cover and chapters and read aloud like any novel: Continue, the Chapters sheet, previous/next, auto-next, highlight, pronunciation rules
@@ -12,14 +26,13 @@
 - Books stay on the phone and are not part of backups; "Replace everything" on restore removes them, "Merge" keeps them.
 - Library: a book shows its kind and author, and hides the web-only buttons (Open in browser, Edit link, Update chapter list, Build by number).
 - **Prepared chapters** (Settings → Prepare next chapters: Off, Text, Text + speech; default Text + speech). The next 3 chapters of a web novel are
-  fetched in the background, so they open at once and read offline. The speech for them is made, charging or not, while nobody is
-  listening, and saved (it pauses when the phone is hot and stops under 30% battery); playing saved speech needs almost no processor power, so the phone stays cool. The player also saves the speech it
+  fetched in the background, so they open at once and read offline. The speech for them is made while the phone is charging and nobody is
+  listening, and saved; playing saved speech needs almost no processor power, so the phone stays cool. The player also saves the speech it
   makes, so replays and the previous chapter are free. Chapters more than 3 away from the open one are deleted automatically, the saved
   speech is kept under 600 MB, and "Clear prepared chapters" empties it. New dependency: WorkManager.
 - Unit tests for the EPUB reader and the PDF text rules (`BooksTest`) and for saved speech (`PreparedTest`).
 - The Light (int8) voice model option is removed: it sounded off. Its files and half-finished downloads are deleted the first time the app
   starts, and Settings → Voice model is back to the single full-precision model. The safer download (unpacked in a staging folder first) stays.
-- The header shows the PageWhisper logo beside the name, with no background, in the accent color of the chosen theme.
 - versionCode 6, versionName 0.6.0.
 
 ## 0.5.0

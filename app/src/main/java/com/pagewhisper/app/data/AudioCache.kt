@@ -12,7 +12,7 @@ internal fun sha1Hex(s: String): String =
 
 /**
  * Speech that has already been made, kept on disk so playing it again costs almost no processor power (and so no heat).
- * One folder per chapter, one file per section of text. A section is found by its voice, speed and exact spoken text,
+ * One folder per chapter, one file per section of text. A section is found by its engine and language, voice, speed and exact spoken text,
  * so a changed voice, speed or pronunciation rule simply makes new speech. It lives in the app's cache folder, which
  * Android may empty when storage is short; nothing depends on it. See FEATURES.md ("Spec: Prepared chapters").
  */
@@ -27,7 +27,7 @@ object AudioCache {
 
     private fun dirOf(url: String) = File(root, chapterName(url))
 
-    fun key(sid: Int, rate: Float, text: String): String = sha1Hex("$sid|$rate|$text")
+    fun key(tag: String, sid: Int, rate: Float, text: String): String = sha1Hex("$tag|$sid|$rate|$text")
 
     /** 16-bit little-endian samples: half the size of the engine's float samples, with no audible difference. */
     internal fun encode(pcm: FloatArray): ByteArray {

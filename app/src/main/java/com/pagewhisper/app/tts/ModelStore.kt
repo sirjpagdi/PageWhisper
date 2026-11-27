@@ -16,31 +16,42 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.coroutines.coroutineContext
 
-/** The downloadable Kokoro voice model. */
-class ModelBundle(val id: String, val url: String, val dirName: String, val modelFile: String, val title: String, val size: String)
+/** A downloadable voice model: [engine] is "kokoro" or "supertonic"; [required] are the files it must have once unpacked. */
+class ModelBundle(
+    val id: String, val url: String, val dirName: String, val modelFile: String, val title: String, val size: String,
+    val engine: String, val required: List<String>,
+)
 
 /**
- * Downloads and unpacks the Kokoro voice model into app-private storage (it is far too big to ship inside the app).
- * No resume yet.
+ * Downloads and unpacks the voice models into app-private storage (they are far too big to ship inside the app).
+ * Kokoro is the full-precision model (about 350 MB); Supertonic 3 is the int8 package that sherpa-onnx publishes (about
+ * 150 MB). No resume yet.
  */
 object ModelStore {
+    private const val BASE = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/"
+
     val STANDARD = ModelBundle(
-        "standard", "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_0.tar.bz2",
-        "kokoro-multi-lang-v1_0", "model.onnx", "Standard", "about 350 MB",
+        "standard", BASE + "kokoro-multi-lang-v1_0.tar.bz2", "kokoro-multi-lang-v1_0", "model.onnx", "Kokoro", "about 350 MB",
+        "kokoro", listOf("model.onnx", "voices.bin", "tokens.txt", "espeak-ng-data"),
     )
+    val SUPERTONIC = ModelBundle(
+        "supertonic", BASE + "sherpa-onnx-supertonic-3-tts-int8-2026-05-11.tar.bz2", "sherpa-onnx-supertonic-3-tts-int8-2026-05-11",
+        "vocoder.int8.onnx", "Supertonic 3", "about 150 MB", "supertonic",
+        listOf("duration_predictor.int8.onnx", "text_encoder.int8.onnx", "vector_estimator.int8.onnx", "vocoder.int8.onnx", "tts.json", "unicode_indexer.bin", "voice.bin"),
+    )
+    val ALL = listOf(STANDARD, SUPERTONIC)
+
+    fun forEngine(engine: String): ModelBundle = if (engine == "supertonic") SUPERTONIC else STANDARD
 
     fun dir(ctx: Context, b: ModelBundle) = File(ctx.filesDir, b.dirName)
 
     fun isReady(ctx: Context, b: ModelBundle): Boolean {
         val d = dir(ctx, b)
-        return File(d, b.modelFile).exists() && File(d, "voices.bin").exists() && File(d, "tokens.txt").exists() &&
-            File(d, "espeak-ng-data").isDirectory && File(d, ".complete").exists()
+        return b.required.all { File(d, it).exists() } && File(d, ".complete").exists()
     }
 
-    fun isReady(ctx: Context): Boolean = isReady(ctx, STANDARD)
-
-    /** The model to speak with, or none if it is not installed. */
-    fun active(ctx: Context): ModelBundle? = if (isReady(ctx, STANDARD)) STANDARD else null
+    /** The model to speak with for [engine], or none if it is not installed. */
+    fun active(ctx: Context, engine: String): ModelBundle? = forEngine(engine).takeIf { isReady(ctx, it) }
 
     /** Removes what an earlier test version left behind: the int8 model and half-finished downloads. */
     fun removeLegacy(ctx: Context) {
