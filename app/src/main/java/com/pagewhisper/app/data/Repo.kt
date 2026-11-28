@@ -128,6 +128,11 @@ object Repo {
 
     fun novelFor(url: String): Novel? = if (url.isEmpty()) null else Extractor.novelKey(url).let { k -> _novels.value.firstOrNull { it.key == k } }
 
+    /** Marks a novel as a favourite or not. Does not change its place in the "recently read" order. */
+    fun toggleFavourite(id: String) {
+        saveNovels(_novels.value.map { if (it.id == id) it.copy(fav = !it.fav) else it })
+    }
+
     fun updateNovelUrl(id: String, url: String) {
         saveNovels(_novels.value.map { if (it.id == id) it.copy(url = url, key = Extractor.novelKey(url), updated = System.currentTimeMillis()) else it })
     }

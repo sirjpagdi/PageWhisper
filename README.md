@@ -4,7 +4,7 @@ A native Android reader that speaks web novel chapters, EPUB books and PDF books
 the app's own screens, no account, no server. `FEATURES.md` holds the spec of its features.
 
 > **0.7.0:** a second voice engine, **Supertonic 3** (10 voices, 31 languages), next to Kokoro; voices and languages you do not like can be hidden;
-> speech is prepared ahead whether or not the phone is charging; the header shows the logo. Builds on 0.6.0's EPUB and PDF books and prepared
+> speech is prepared ahead whether or not the phone is charging; the header shows the logo; the Library is a cover grid with a continue card, favourites and sorting. Builds on 0.6.0's EPUB and PDF books and prepared
 > chapters, 0.5.0's Heat control, and 0.4.0's bundled fonts, stronger text contrast, chapter title narration and brightness controls.
 > See [the changelog](docs/CHANGELOG.md) for details.
 

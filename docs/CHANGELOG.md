@@ -9,6 +9,9 @@
   voices and the 31 languages; nothing is deleted and they can be brought back; at least one stays in each list.
 - **Speech is prepared whether or not the phone is charging.** It still waits while you are listening, pauses when the phone is hot, and stops
   under 30% battery when not charging (the system also skips it when the battery is low).
+- **New Library layout:** a continue-reading card with progress, a cover grid (3 columns, "CH 12/340" under each title) or a list, Favourites
+  and Books filters, sorting, a heart on favourites, a tag on imported books, press and hold for the novel's actions, and a + button to add a
+  novel by link or import a book.
 - **Header logo:** the PageWhisper logo sits beside the name, with no background, in the accent color of the chosen theme. The drawing fills its
   box (the empty margin is cropped) and is 26 dp tall.
 - Tests for the voice lists, hiding, the engine choice and saved-speech keys (`VoiceCatalogTest`, `PreparedTest`).

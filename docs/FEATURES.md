@@ -7,6 +7,7 @@ This file is the spec of the Android app's features: names, ranges, defaults and
 | Feature | Status |
 |---|---|
 | Fetch a chapter by link (reader service, direct, proxy) | Done (OkHttp + Jsoup) |
+| **Library as a cover grid**: continue card, favourites, sort, grid or list, + button | Done (needs a phone to check the look) |
 | **Supertonic 3 voice engine** (10 voices, 31 languages) and hiding voices | Done (needs a phone to check the sound and speed) |
 | **Prepared chapters**: next 3 chapters fetched, speech made while not listening, old ones deleted | Done (WorkManager; background job needs a phone to check) |
 | **Books**: import EPUB and PDF into the library | Done (jsoup for EPUB, PDFBox for PDF; unit tested text rules) |
@@ -394,6 +395,19 @@ Test vectors: `shared-tests.json` -> `backupMerge`. Both apps must produce the s
 
 ---
 
+## Spec: Library layout
+
+- **Continue card** at the top: the novel read most recently (cover, title, current chapter, a progress bar and a percentage). Tap to continue.
+- **Header:** "YOUR LIBRARY · n" with the number of novels shown; a sort menu (Recently read, Title A-Z, Title Z-A) and a grid or list switch. Both are remembered.
+- **Filters:** Favourites and Books (imported EPUB and PDF). They can be combined and the count follows them.
+- **Grid (default):** 3 columns. Each novel is a cover (2:3) with the title under it (two lines) and "CH 12/340" (the chapter bookmarked, and the chapters in its list; "340 chapters" if the bookmark is not in the list; nothing if the novel has no list). A heart marks a favourite; a red EPUB or PDF tag marks an imported book.
+- **List:** a row per novel: small cover, title, source or book kind with the progress, a progress bar, a heart button and a "more" button.
+- **Tap** a novel to continue where you left off. **Press and hold** (or the "more" button in the list) for: Continue reading, Chapters, Add or remove favourite, Change cover, Open in browser and Edit link (web novels only), Remove.
+- **+ button:** a dialog to add a novel by link (with an optional title), add the novel open in the reader, or import an EPUB or PDF.
+- Below the novels: status, Add current novel, Find missing covers, Update all chapter lists, and the saved chapters.
+- A favourite is a flag on the novel (`fav`); it does not change the "recently read" order. Not part of a backup of settings; it travels with the novel list.
+
+---
 ## Spec: Voices and engines
 
 Two voice engines run through sherpa-onnx; the person picks one in Settings → Voice.

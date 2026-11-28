@@ -29,6 +29,7 @@ data class Novel(
     val chapter: String = "",
     val updated: Long = 0L,
     val coverTry: Long = 0L,
+    val fav: Boolean = false,
 )
 
 @Serializable
@@ -104,6 +105,8 @@ data class AppSettings(
     val stVoice: Int = 0,
     val stLang: String = "en",
     val hiddenVoices: List<String> = emptyList(),
+    val libGrid: Boolean = true,
+    val libSort: String = "recent",
 ) {
     fun sanitized(): AppSettings = AppSettings(
         voice = voice,
@@ -120,12 +123,14 @@ data class AppSettings(
         stVoice = stVoice.coerceIn(0, 9),
         stLang = if (Supertonic.languages.any { it.code == stLang }) stLang else "en",
         hiddenVoices = hiddenVoices.distinct(),
+        libSort = if (libSort in LIB_SORTS) libSort else "recent",
     )
 
     companion object {
         val HEAT_MODES = listOf("fast", "balanced", "cool")
         val PREFETCH_MODES = listOf("off", "text", "audio")
         val ENGINES = listOf("kokoro", "supertonic")
+        val LIB_SORTS = listOf("recent", "az", "za")
         val AMBIENT_KEYS = listOf("off", "rain", "heavy", "storm", "ocean", "insects", "forest", "wind", "fire", "brown")
     }
 }
